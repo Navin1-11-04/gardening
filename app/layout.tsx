@@ -2,8 +2,18 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Figtree } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import localFont from "next/font/local";
 
-const figtree = Figtree({subsets:['latin'],variable:'--font-sans'});
+const figtree = Figtree({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const outfit = localFont({
+  src: "../public/Outfit-Variable.ttf",
+  display: "swap",
+  variable: "--font-outfit",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,10 +36,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", figtree.variable)}>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html
+      lang="en"
+      className={cn(
+        figtree.variable,
+        outfit.variable,
+        geistSans.variable,
+        geistMono.variable
+      )}
+    >
+      <body className="font-sans antialiased">
         {children}
       </body>
     </html>
