@@ -3,30 +3,39 @@
 import { useState, useEffect, useCallback } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
-import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowLeft01Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
 
 interface SliderItem {
   imgUrl: string;
+  label: string;
   title: string;
-  subtitle: string;
+  ctaText: string;
+  ctaHref: string;
 }
 
 const sliderData: SliderItem[] = [
   {
-    imgUrl: "https://images.unsplash.com/photo-1617576683096-00fc8eecb3af?q=80&w=1170&auto=format&fit=crop",
-    title: "Premium Seeds",
-    subtitle: "Grow healthy plants from high quality seeds",
+    imgUrl:
+      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?q=80&w=1440&auto=format&fit=crop",
+    label: "(Premium Seeds)",
+    title: "Grow healthy plants from the finest quality seeds.",
+    ctaText: "Shop Now",
+    ctaHref: "/shop",
   },
   {
-    imgUrl: "https://images.unsplash.com/photo-1457530378978-8bac673b8062?q=80&w=1170&auto=format&fit=crop",
-    title: "Beautiful Pots",
-    subtitle: "Decorate your garden with stylish pots",
+    imgUrl:
+      "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1440&auto=format&fit=crop",
+    label: "(Stylish Pots)",
+    title: "Beautiful pots to bring life and colour to any space.",
+    ctaText: "Shop Now",
+    ctaHref: "/shop",
   },
   {
-    imgUrl: "https://images.unsplash.com/photo-1507484467459-0c01be16726e?q=80&w=1170&auto=format&fit=crop",
-    title: "Organic Fertilizers",
-    subtitle: "Boost plant growth naturally",
+    imgUrl:
+      "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=1440&auto=format&fit=crop",
+    label: "(Organic Fertilizers)",
+    title: "Boost your garden's growth, naturally and sustainably.",
+    ctaText: "Shop Now",
+    ctaHref: "/shop",
   },
 ];
 
@@ -34,7 +43,7 @@ export const Slider = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
-    Autoplay({ delay: 4000, stopOnInteraction: false }),
+    Autoplay({ delay: 5000, stopOnInteraction: false }),
   ]);
 
   const onSelect = useCallback(() => {
@@ -42,29 +51,22 @@ export const Slider = () => {
     setSelectedIndex(emblaApi.selectedScrollSnap());
   }, [emblaApi]);
 
-  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
-  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
-  const scrollTo = (index: number) => emblaApi?.scrollTo(index);
-
   useEffect(() => {
     if (!emblaApi) return;
     emblaApi.on("select", onSelect);
-    return () => { emblaApi.off("select", onSelect); };
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
   }, [emblaApi, onSelect]);
 
-  // Keyboard control — only fires on md+ screens (768px)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (window.innerWidth < 768) return;
-      if (e.key === "ArrowLeft") scrollPrev();
-      if (e.key === "ArrowRight") scrollNext();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [scrollPrev, scrollNext]);
+  const current = sliderData[selectedIndex];
 
   return (
-    <div className="relative w-full h-[80vh] overflow-hidden">
+    <div
+      className="relative w-full overflow-hidden rounded-b-3xl"
+      style={{ height: "85dvh" }}
+    >
+      {/* SLIDES */}
       <div ref={emblaRef} className="w-full h-full">
         <div className="flex h-full">
           {sliderData.map((item, index) => (
@@ -74,53 +76,73 @@ export const Slider = () => {
                 alt={item.title}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-black/20" />
-              <div className="absolute bottom-24 text-center w-full">
-                <h1 className="text-3xl md:text-7xl text-white leading-tight mb-2 font-outfit uppercase font-bold text-shadow-2xs">
-                  {item.title}
-                </h1>
-                <p className="text-white/90 text-sm md:text-base mb-2 text-shadow-2xs">
-                  {item.subtitle}
-                </p>
-                <button className="mt-4 px-8 py-3 bg-white text-green-800 font-outfit font-bold text-sm uppercase tracking-widest rounded-full hover:bg-green-500 hover:text-white active:scale-95 transition-all duration-300 cursor-pointer">
-                  Shop Now
-                </button>
-              </div>
+
+              {/* Gradient overlay */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(to top, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.30) 45%, rgba(0,0,0,0.10) 100%)",
+                }}
+              />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Hidden on mobile, visible md+ */}
-      <button
-        onClick={scrollPrev}
-        className="hidden md:flex absolute left-5 top-1/2 -translate-y-1/2 w-11 h-14 rounded-full text-white items-center justify-center hover:bg-white/20 transition-colors z-10"
-        aria-label="Previous"
+      {/* CENTERED CONTENT */}
+      <div
+        className="absolute inset-0 flex flex-col items-center justify-end text-center"
+        style={{
+          paddingLeft: "clamp(1.5rem, 4vw, 3.5rem)",
+          paddingRight: "clamp(1.5rem, 4vw, 3.5rem)",
+          paddingBottom: "clamp(1.5rem, 3vw, 2.5rem)",
+        }}
       >
-        <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5 md:size-8" color="currentColor" strokeWidth={2} />
-      </button>
-      <button
-        onClick={scrollNext}
-        className="hidden md:flex absolute right-5 top-1/2 -translate-y-1/2 w-11 h-14 rounded-full text-white items-center justify-center hover:bg-white/20 transition-colors z-10"
-        aria-label="Next"
-      >
-        <HugeiconsIcon icon={ArrowRight01Icon} className="size-5 md:size-8" color="currentColor" strokeWidth={2} />
-      </button>
+        <div className="flex flex-col gap-3 max-w-3xl items-center">
+          <span className="text-white/80 font-light tracking-wide font-outfit uppercase">
+            {current.label}
+          </span>
 
-      {/* Dot pagination */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
-        {sliderData.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => scrollTo(i)}
-            aria-label={`Go to slide ${i + 1}`}
-            className={`rounded-full transition-all duration-300 ${
-              i === selectedIndex
-                ? "w-6 h-2 bg-white"
-                : "w-2 h-2 bg-white/40 hover:bg-white/60"
-            }`}
-          />
-        ))}
+          <h1
+            className="text-white font-semibold leading-none font-outfit uppercase"
+            style={{
+              fontSize: "clamp(1.5rem, 3.8vw, 3.2rem)",
+              lineHeight: 1.08,
+            }}
+          >
+            {current.title}
+          </h1>
+
+          {/* CTA */}
+          <a
+            href={current.ctaHref}
+            className="flex items-center gap-2 bg-white text-black font-medium transition-all duration-200 hover:bg-white/90 active:scale-95 font-outfit uppercase"
+            style={{
+              fontSize: "clamp(0.75rem, 1.1vw, 0.875rem)",
+              padding: "clamp(0.55rem, 1vw, 0.75rem) clamp(1rem, 2vw, 1.5rem)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {current.ctaText}
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                d="M2.5 7H11.5M8 3.5L11.5 7L8 10.5"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </a>
+        </div>
       </div>
     </div>
   );
