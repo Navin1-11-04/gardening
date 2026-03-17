@@ -4,27 +4,27 @@ import { useState, useRef } from "react";
 
 const steps = [
   {
-    number: "01",
+    number: "1",
     title: "Browse Products",
-    description: "Explore seeds, pots and garden supplies.",
+    description: "Look through our seeds, pots, fertilizers and more.",
     icon: "🌿",
   },
   {
-    number: "02",
+    number: "2",
     title: "Add to Cart",
-    description: "Choose quantity and add items.",
+    description: "Tap 'Add to Cart' on any product you like.",
     icon: "🛒",
   },
   {
-    number: "03",
-    title: "Place Order",
-    description: "Enter address and confirm order.",
+    number: "3",
+    title: "Place Your Order",
+    description: "Enter your address, choose payment and confirm.",
     icon: "📦",
   },
   {
-    number: "04",
-    title: "Fast Delivery",
-    description: "Fresh garden supplies delivered to your home.",
+    number: "4",
+    title: "We Deliver to You",
+    description: "Fresh garden supplies at your doorstep in 2–4 days.",
     icon: "🚚",
   },
 ];
@@ -41,110 +41,93 @@ export const HowToOrder = () => {
   return (
     <section className="w-full bg-white">
 
-      {/* Title */}
-      <div className="text-center pt-16 pb-12 px-6 ">
-        <p className="text-xs tracking-[0.35em] uppercase text-gray-400 mb-3">
-          How it works
-        </p>
+      {/* Steps */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-10 sm:pb-12">
+        <div className="mb-7 sm:mb-10">
+          <p className="text-sm tracking-[0.2em] uppercase text-[#7a9e5f] font-semibold mb-2">How it works</p>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#2a2a1e] font-outfit">How to Order</h2>
+          <p className="text-base sm:text-lg text-[#5a5a48] mt-3 max-w-xl">
+            It's simple! Follow these 4 easy steps to get your garden supplies delivered.
+          </p>
+        </div>
 
-        <h2 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight font-outfit">
-          How to Order
-        </h2>
+        {/* Steps grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          {steps.map((step, i) => (
+            <div
+              key={step.number}
+              className="relative flex flex-col gap-4 bg-[#faf7f2] rounded-2xl p-5 sm:p-6 border border-[#e8e0d0]"
+            >
+              {/* Step number + icon */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#3d6b35] text-white font-black text-lg flex items-center justify-center shrink-0">
+                  {step.number}
+                </div>
+                <span className="text-3xl">{step.icon}</span>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-bold text-[#2a2a1e]">{step.title}</h3>
+                <p className="text-base text-[#5a5a48] mt-1.5 leading-snug">{step.description}</p>
+              </div>
+
+              {/* Connector arrow (not on last) */}
+              {i < steps.length - 1 && (
+                <div className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 text-[#b8d4a0] text-2xl font-bold">
+                  →
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Video Section */}
-      <div className="max-w-7xl mx-auto px-6">
+      {/* Video */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-10 sm:pb-16">
+        <p className="text-base sm:text-lg text-[#5a5a48] mb-4 font-medium">
+          🎬 Watch our quick video guide:
+        </p>
 
-        <div className="relative rounded-2xl overflow-hidden shadow-lg group">
-
+        <div className="relative rounded-2xl overflow-hidden shadow-md border border-[#e8e0d0]">
           {!playing && (
             <>
-              {/* Thumbnail */}
               <img
                 src="/images/how-to-order-thumbnail.jpg"
-                alt="How to order"
-                className="w-full h-[350px] md:h-[450px] object-cover"
+                alt="How to order video"
+                className="w-full h-[200px] sm:h-[360px] md:h-[420px] object-cover"
               />
-
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
-
-              {/* Play Button */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
               <div
                 className="absolute inset-0 flex items-center justify-center cursor-pointer"
                 onClick={handlePlay}
               >
-                <div className="relative flex items-center justify-center">
-
-                  <div className="absolute w-24 h-24 rounded-full bg-white/20 animate-ping" />
-
-                  <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-xl hover:scale-110 transition">
-
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white shadow-2xl flex items-center justify-center hover:scale-110 transition">
                     <div
                       style={{
-                        width: 0,
-                        height: 0,
-                        borderTop: "12px solid transparent",
-                        borderBottom: "12px solid transparent",
-                        borderLeft: "18px solid #1a1a1a",
-                        marginLeft: "4px",
+                        width: 0, height: 0,
+                        borderTop: "14px solid transparent",
+                        borderBottom: "14px solid transparent",
+                        borderLeft: "22px solid #3d6b35",
+                        marginLeft: "5px",
                       }}
                     />
-
                   </div>
-
+                  <span className="text-white font-bold text-lg sm:text-xl bg-black/30 px-4 py-1.5 rounded-full backdrop-blur-sm">
+                    Tap to Watch
+                  </span>
                 </div>
               </div>
             </>
           )}
-
-          {/* Video */}
           <video
             ref={videoRef}
-            className={`w-full h-[350px] md:h-[450px] object-cover ${
-              playing ? "block" : "hidden"
-            }`}
+            className={`w-full h-[200px] sm:h-[360px] md:h-[420px] object-cover ${playing ? "block" : "hidden"}`}
             src="/videos/how-to-order.mp4"
             controls
             playsInline
             onEnded={() => setPlaying(false)}
           />
-        </div>
-      </div>
-
-      {/* Steps */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-
-          {steps.map((step) => (
-            <div
-              key={step.number}
-              className="flex items-start gap-4 p-5 rounded-xl border border-gray-100  transition"
-            >
-              {/* Icon */}
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-xl">
-                {step.icon}
-              </div>
-
-              {/* Content */}
-              <div>
-                <span className="text-xs font-semibold tracking-widest text-green-600 uppercase">
-                  Step {step.number}
-                </span>
-
-                <h3 className="text-base font-semibold text-gray-900 mt-1">
-                  {step.title}
-                </h3>
-
-                <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-                  {step.description}
-                </p>
-              </div>
-
-            </div>
-          ))}
-
         </div>
       </div>
     </section>

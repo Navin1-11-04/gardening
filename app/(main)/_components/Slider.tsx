@@ -6,44 +6,44 @@ import Autoplay from "embla-carousel-autoplay";
 
 interface SliderItem {
   imgUrl: string;
-  label: string;
+  tag: string;
   title: string;
+  subtitle: string;
   ctaText: string;
   ctaHref: string;
 }
 
 const sliderData: SliderItem[] = [
   {
-    imgUrl:
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?q=80&w=1440&auto=format&fit=crop",
-    label: "(Premium Seeds)",
-    title: "Grow healthy plants from the finest quality seeds.",
-    ctaText: "Shop Now",
-    ctaHref: "/shop",
+    imgUrl: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?q=80&w=1440&auto=format&fit=crop",
+    tag: "Premium Seeds",
+    title: "Grow healthy plants from the finest seeds.",
+    subtitle: "Handpicked varieties for home & balcony gardens.",
+    ctaText: "Shop Seeds",
+    ctaHref: "/shop/seeds",
   },
   {
-    imgUrl:
-      "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1440&auto=format&fit=crop",
-    label: "(Stylish Pots)",
-    title: "Beautiful pots to bring life and colour to any space.",
-    ctaText: "Shop Now",
-    ctaHref: "/shop",
+    imgUrl: "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1440&auto=format&fit=crop",
+    tag: "Stylish Pots",
+    title: "Beautiful pots for every corner of your home.",
+    subtitle: "Terracotta, ceramic & plastic in all sizes.",
+    ctaText: "Shop Pots",
+    ctaHref: "/shop/pots",
   },
   {
-    imgUrl:
-      "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=1440&auto=format&fit=crop",
-    label: "(Organic Fertilizers)",
-    title: "Boost your garden's growth, naturally and sustainably.",
-    ctaText: "Shop Now",
-    ctaHref: "/shop",
+    imgUrl: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=1440&auto=format&fit=crop",
+    tag: "Organic Fertilizers",
+    title: "Nourish your garden, naturally.",
+    subtitle: "Safe, organic blends for healthier plants.",
+    ctaText: "Shop Fertilizers",
+    ctaHref: "/shop/fertilizers",
   },
 ];
 
 export const Slider = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
-
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
-    Autoplay({ delay: 5000, stopOnInteraction: false }),
+    Autoplay({ delay: 6000, stopOnInteraction: false }),
   ]);
 
   const onSelect = useCallback(() => {
@@ -54,35 +54,24 @@ export const Slider = () => {
   useEffect(() => {
     if (!emblaApi) return;
     emblaApi.on("select", onSelect);
-    return () => {
-      emblaApi.off("select", onSelect);
-    };
+    return () => { emblaApi.off("select", onSelect); };
   }, [emblaApi, onSelect]);
 
   const current = sliderData[selectedIndex];
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-b-3xl"
-      style={{ height: "85dvh" }}
-    >
-      {/* SLIDES */}
+    <div className="relative w-full overflow-hidden" style={{ height: "clamp(400px, 70dvh, 680px)" }}>
+      {/* Slides */}
       <div ref={emblaRef} className="w-full h-full">
         <div className="flex h-full">
-          {sliderData.map((item, index) => (
-            <div key={index} className="flex-[0_0_100%] min-w-0 relative h-full">
-              <img
-                src={item.imgUrl}
-                alt={item.title}
-                className="w-full h-full object-cover"
-              />
-
-              {/* Gradient overlay */}
+          {sliderData.map((item, i) => (
+            <div key={i} className="flex-[0_0_100%] min-w-0 relative h-full">
+              <img src={item.imgUrl} alt={item.title} className="w-full h-full object-cover" />
+              {/* Strong gradient for text legibility */}
               <div
                 className="absolute inset-0"
                 style={{
-                  background:
-                    "linear-gradient(to top, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.30) 45%, rgba(0,0,0,0.10) 100%)",
+                  background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.15) 100%)",
                 }}
               />
             </div>
@@ -90,59 +79,62 @@ export const Slider = () => {
         </div>
       </div>
 
-      {/* CENTERED CONTENT */}
-      <div
-        className="absolute inset-0 flex flex-col items-center justify-end text-center"
-        style={{
-          paddingLeft: "clamp(1.5rem, 4vw, 3.5rem)",
-          paddingRight: "clamp(1.5rem, 4vw, 3.5rem)",
-          paddingBottom: "clamp(1.5rem, 3vw, 2.5rem)",
-        }}
-      >
-        <div className="flex flex-col gap-3 max-w-3xl items-center">
-          <span className="text-white/80 font-light tracking-wide font-outfit uppercase">
-            {current.label}
+      {/* Content — left-aligned, large */}
+      <div className="absolute inset-0 flex flex-col justify-end pb-10 sm:pb-16">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex flex-col gap-3 sm:gap-4">
+          {/* Tag pill */}
+          <span className="inline-flex items-center gap-2 w-fit bg-[#3d6b35]/80 text-white text-sm font-semibold tracking-wide px-4 py-1.5 rounded-full backdrop-blur-sm">
+            <span className="w-2 h-2 rounded-full bg-[#a8d878]"></span>
+            {current.tag}
           </span>
 
+          {/* Title — large and bold for easy reading */}
           <h1
-            className="text-white font-semibold leading-none font-outfit uppercase"
-            style={{
-              fontSize: "clamp(1.5rem, 3.8vw, 3.2rem)",
-              lineHeight: 1.08,
-            }}
+            className="text-white font-bold font-outfit leading-tight"
+            style={{ fontSize: "clamp(1.6rem, 4.5vw, 3.2rem)", lineHeight: 1.1 }}
           >
             {current.title}
           </h1>
 
-          {/* CTA */}
-          <a
-            href={current.ctaHref}
-            className="flex items-center gap-2 bg-white text-black font-medium transition-all duration-200 hover:bg-white/90 active:scale-95 font-outfit uppercase"
-            style={{
-              fontSize: "clamp(0.75rem, 1.1vw, 0.875rem)",
-              padding: "clamp(0.55rem, 1vw, 0.75rem) clamp(1rem, 2vw, 1.5rem)",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {current.ctaText}
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
+          {/* Subtitle — visible helper text */}
+          <p className="text-white/80 text-base sm:text-lg font-medium max-w-lg leading-snug">
+            {current.subtitle}
+          </p>
+
+          {/* CTA — large, easy to tap */}
+          <div className="flex items-center gap-4 pt-1">
+            <a
+              href={current.ctaHref}
+              className="inline-flex items-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] text-white font-bold text-base sm:text-lg px-7 py-3.5 rounded-xl transition-all duration-200 active:scale-95 shadow-lg"
             >
-              <path
-                d="M2.5 7H11.5M8 3.5L11.5 7L8 10.5"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </a>
+              {current.ctaText}
+              <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M2.5 7H11.5M8 3.5L11.5 7L8 10.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
+            <a href="/shop" className="text-white/75 text-base font-semibold underline underline-offset-4 hover:text-white transition-colors">
+              Browse all →
+            </a>
+          </div>
         </div>
+        </div>
+      </div>
+
+      {/* Large dot indicators */}
+      <div className="absolute bottom-5 right-4 sm:right-6 flex items-center gap-2">
+        {sliderData.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => emblaApi?.scrollTo(i)}
+            className={`rounded-full transition-all duration-300 ${
+              i === selectedIndex
+                ? "w-8 h-3 bg-white"
+                : "w-3 h-3 bg-white/40 hover:bg-white/65"
+            }`}
+            aria-label={`Slide ${i + 1}`}
+          />
+        ))}
       </div>
     </div>
   );

@@ -1,132 +1,151 @@
 "use client";
 
-import { Truck, RotateCcw, ShieldCheck, Headphones } from "lucide-react";
+import { Truck, RotateCcw, ShieldCheck, Headphones, Phone, Mail } from "lucide-react";
 import Link from "next/link";
+
+const features = [
+  { icon: Truck, title: "Free Delivery", text: "On orders above ₹999" },
+  { icon: RotateCcw, title: "Easy Returns", text: "Within 7 days" },
+  { icon: ShieldCheck, title: "Safe Payments", text: "Trusted & secure" },
+  { icon: Headphones, title: "Garden Support", text: "Call us anytime" },
+];
 
 export const Footer = () => {
   return (
-    <footer className="bg-[#111] text-gray-300 w-full">
+    <footer className="bg-[#1e2a1a] text-gray-200 w-full">
 
-      {/* FEATURE BAR */}
+      {/* Feature Bar */}
       <div className="border-b border-white/10">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-8">
-
-          <div className="bg-white/5 p-6 flex items-center gap-4">
-            <Truck size={20} />
-            <p className="text-sm">Free delivery on orders above ₹999</p>
-          </div>
-
-          <div className="bg-white/5 p-6 flex items-center gap-4">
-            <RotateCcw size={20} />
-            <p className="text-sm">Easy returns within 7 days</p>
-          </div>
-
-          <div className="bg-white/5 p-6 flex items-center gap-4">
-            <ShieldCheck size={20} />
-            <p className="text-sm">Secure payments & trusted checkout</p>
-          </div>
-
-          <div className="bg-white/5 p-6 flex items-center gap-4">
-            <Headphones size={20} />
-            <p className="text-sm">Garden support & plant guidance</p>
-          </div>
-
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4">
+          {features.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="flex items-start gap-4 px-5 sm:px-8 py-6 sm:py-8 border-r border-b border-white/10 last:border-r-0 [&:nth-child(2)]:border-r-0 md:[&:nth-child(2)]:border-r">
+              <div className="w-11 h-11 rounded-xl bg-[#3d6b35]/40 flex items-center justify-center shrink-0">
+                <Icon size={20} className="text-[#a8d878]" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-white">{title}</p>
+                <p className="text-sm text-gray-400 mt-0.5">{text}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* MAIN FOOTER */}
-      <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-2 gap-12">
+      {/* Main Footer */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-8 sm:pb-12 grid md:grid-cols-2 gap-10 sm:gap-14">
 
-        {/* BRAND */}
+        {/* Brand + Contact */}
         <div>
-          <h2 className="text-6xl font-bold text-white tracking-tight">
-            KAVIN
-          </h2>
+          <div className="mb-5">
+            <div className="text-3xl sm:text-4xl font-black text-white tracking-tight font-outfit leading-none">KAVIN</div>
+            <div className="text-lg font-bold tracking-[0.3em] text-[#a8d878] mt-0.5">ORGANICS</div>
+          </div>
 
-          <p className="text-lg text-green-400 -mt-2">ORGANICS</p>
-
-          <p className="text-sm mt-4 text-gray-400">
-            Helping you grow a greener home garden with quality seeds,
-            fertilizers, pots, and gardening essentials.
+          <p className="text-base text-gray-400 max-w-xs leading-relaxed mb-6">
+            Helping you grow a greener home garden with quality seeds, fertilizers, pots and more.
           </p>
 
-          <p className="text-xs mt-6 text-gray-500">
-            © 2025 Kavin Organics. All Rights Reserved
-          </p>
-
-          {/* payments */}
-          <div className="flex gap-4 mt-10 text-xs text-gray-400">
-            <span>VISA</span>
-            <span>Mastercard</span>
-            <span>UPI</span>
-            <span>G Pay</span>
+          {/* Contact info — prominent for elderly */}
+          <div className="flex flex-col gap-3">
+            <a
+              href="tel:+919876543210"
+              className="flex items-center gap-3 bg-[#3d6b35]/30 hover:bg-[#3d6b35]/50 border border-[#3d6b35]/50 rounded-xl px-4 py-3 transition-colors w-fit"
+            >
+              <Phone size={20} className="text-[#a8d878] shrink-0" />
+              <div>
+                <p className="text-xs text-gray-400">Call us</p>
+                <p className="text-base font-bold text-white">+91 98765 43210</p>
+              </div>
+            </a>
+            <a
+              href="mailto:hello@kavinorganics.in"
+              className="flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-3 transition-colors w-fit"
+            >
+              <Mail size={20} className="text-[#a8d878] shrink-0" />
+              <div>
+                <p className="text-xs text-gray-400">Email us</p>
+                <p className="text-base font-bold text-white">hello@kavinorganics.in</p>
+              </div>
+            </a>
           </div>
+
+          <p className="text-sm text-gray-600 mt-6">© 2025 Kavin Organics. All Rights Reserved</p>
         </div>
 
-        {/* LINKS */}
-        <div className="grid md:grid-cols-3 gap-10">
-
-          {/* SHOP */}
+        {/* Links — large, legible */}
+        <div className="grid grid-cols-3 gap-4 sm:gap-8">
           <div>
-            <p className="text-xs text-gray-500 mb-4">(Shop)</p>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/shop/seeds">Seeds</Link></li>
-              <li><Link href="/shop/grow-bags">Grow Bags</Link></li>
-              <li><Link href="/shop/fertilizers">Fertilizers</Link></li>
-              <li><Link href="/shop/pots">Pots</Link></li>
-              <li><Link href="/shop/cocopeat">Coco Peat</Link></li>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Shop</p>
+            <ul className="space-y-3">
+              {[["Seeds", "/shop/seeds"], ["Grow Bags", "/shop/grow-bags"], ["Fertilizers", "/shop/fertilizers"], ["Pots", "/shop/pots"], ["Coco Peat", "/shop/cocopeat"]].map(([label, href]) => (
+                <li key={label}>
+                  <Link href={href} className="text-base text-gray-400 hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* GARDEN GUIDES */}
           <div>
-            <p className="text-xs text-gray-500 mb-4">(Guides)</p>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="#">How to Grow Tomatoes</Link></li>
-              <li><Link href="#">Balcony Gardening</Link></li>
-              <li><Link href="#">Using Cocopeat</Link></li>
-              <li><Link href="#">Beginner Garden Tips</Link></li>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Guides</p>
+            <ul className="space-y-3">
+              {["Grow Tomatoes", "Balcony Garden", "Using Cocopeat", "Beginner Tips"].map((label) => (
+                <li key={label}>
+                  <Link href="#" className="text-base text-gray-400 hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* HELP */}
           <div>
-            <p className="text-xs text-gray-500 mb-4">(Help)</p>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/contact">Contact Us</Link></li>
-              <li><Link href="/faq">FAQs</Link></li>
-              <li><Link href="/shipping">Shipping Policy</Link></li>
-              <li><Link href="/privacy">Privacy Policy</Link></li>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Help</p>
+            <ul className="space-y-3">
+              {[["Contact Us", "/contact"], ["FAQs", "/faq"], ["Shipping", "/shipping"], ["Returns", "/returns"], ["Privacy", "/privacy"]].map(([label, href]) => (
+                <li key={label}>
+                  <Link href={href} className="text-base text-gray-400 hover:text-white transition-colors">
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
-
         </div>
-
       </div>
 
-      {/* NEWSLETTER */}
-      <div className="max-w-7xl mx-auto px-6 pb-16">
-        <p className="text-sm mb-4">
-          Get gardening tips, plant guides, and special offers delivered to your inbox.
+      {/* Newsletter */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-10 sm:pb-14 border-t border-white/10 pt-8">
+        <h3 className="text-lg font-bold text-white mb-1">Get Gardening Tips by Email</h3>
+        <p className="text-base text-gray-400 mb-4">
+          We'll send you seasonal planting tips, guides, and special offers.
         </p>
 
-        <div className="flex max-w-md">
+        <div className="flex flex-col sm:flex-row gap-3 max-w-md">
           <input
             type="email"
-            placeholder="Your Email"
-            className="flex-1 bg-white/5 border border-white/10 px-4 py-3 text-sm outline-none"
+            placeholder="Enter your email address"
+            className="flex-1 bg-white/8 border-2 border-white/15 rounded-xl px-4 py-3.5 text-base text-white placeholder:text-gray-500 outline-none focus:border-[#7a9e5f] transition-colors"
           />
-
-          <button className="bg-white text-black px-6 text-sm font-medium">
+          <button className="bg-[#3d6b35] hover:bg-[#335c2c] text-white px-6 py-3.5 rounded-xl text-base font-bold transition-colors whitespace-nowrap">
             Subscribe
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 mt-3">
-          By subscribing, you agree to receive emails from Kavin Organics.
+        <p className="text-sm text-gray-600 mt-3">
+          We respect your privacy. Unsubscribe anytime.
         </p>
-      </div>
 
+        {/* Payment icons */}
+        <div className="flex gap-2 mt-6">
+          {["VISA", "Mastercard", "UPI", "G Pay"].map((p) => (
+            <span key={p} className="border border-white/15 px-3 py-1.5 rounded-lg text-xs text-gray-500 font-medium">
+              {p}
+            </span>
+          ))}
+        </div>
+      </div>
     </footer>
   );
 };

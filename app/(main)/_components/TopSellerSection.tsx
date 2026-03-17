@@ -11,8 +11,7 @@ const topProducts = [
     subtitle: "8 inch — handcrafted",
     price: 249,
     badge: "Best Seller",
-    image:
-      "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=800&auto=format&fit=crop&q=80",
   },
   {
     id: 2,
@@ -20,8 +19,7 @@ const topProducts = [
     subtitle: "15 litre — set of 3",
     price: 299,
     badge: "Best Seller",
-    image:
-      "https://images.unsplash.com/photo-1599685315640-89c0f88c3b4e?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1599685315640-89c0f88c3b4e?w=800&auto=format&fit=crop&q=80",
   },
   {
     id: 3,
@@ -29,8 +27,7 @@ const topProducts = [
     subtitle: "1 kg — slow release",
     price: 199,
     badge: "Popular",
-    image:
-      "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
   },
   {
     id: 4,
@@ -38,8 +35,7 @@ const topProducts = [
     subtitle: "Indoor garden pot",
     price: 179,
     badge: "Popular",
-    image:
-      "https://images.unsplash.com/photo-1616627455680-0e60e2c3f5f5?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1616627455680-0e60e2c3f5f5?w=800&auto=format&fit=crop&q=80",
   },
 ];
 
@@ -50,8 +46,7 @@ const newProducts = [
     subtitle: "Pack of 50 seeds",
     price: 149,
     badge: "New",
-    image:
-      "https://images.unsplash.com/photo-1592919505780-303950717480?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1592919505780-303950717480?w=800&auto=format&fit=crop&q=80",
   },
   {
     id: 6,
@@ -59,8 +54,7 @@ const newProducts = [
     subtitle: "Adjustable nozzle",
     price: 199,
     badge: "New",
-    image:
-      "https://images.unsplash.com/photo-1615486366482-4b7a30d1f9b3?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1615486366482-4b7a30d1f9b3?w=800&auto=format&fit=crop&q=80",
   },
   {
     id: 7,
@@ -68,8 +62,7 @@ const newProducts = [
     subtitle: "Organic soil enhancer",
     price: 129,
     badge: "New",
-    image:
-      "https://images.unsplash.com/photo-1614594975525-e45190c55d0c?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1614594975525-e45190c55d0c?w=800&auto=format&fit=crop&q=80",
   },
   {
     id: 8,
@@ -77,106 +70,97 @@ const newProducts = [
     subtitle: "Beginner gardening kit",
     price: 399,
     badge: "New",
-    image:
-      "https://images.unsplash.com/photo-1615486366363-7b9c5c0d9c2f?w=800&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1615486366363-7b9c5c0d9c2f?w=800&auto=format&fit=crop&q=80",
   },
 ];
 
 export const TopSellersSection = () => {
   const [tab, setTab] = useState<"new" | "top">("top");
-
   const products = tab === "top" ? topProducts : newProducts;
 
   return (
-    <section className="w-full bg-white py-16 px-6 md:px-10">
+    <section className="w-full bg-[#faf7f2] py-10 sm:py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+
       {/* Header */}
-      <div className="text-center mb-14">
-        <div className="inline-flex items-center gap-1 bg-gray-100 rounded-full p-1 mb-6">
+      <div className="mb-8 sm:mb-12">
+        {/* Tab switcher — large buttons */}
+        <div className="flex gap-2 mb-5 sm:mb-6">
           <button
             onClick={() => setTab("top")}
-            className={`px-6 py-2 rounded-full text-sm font-semibold transition ${
+            className={`px-5 py-3 rounded-xl text-base font-bold transition-all ${
               tab === "top"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-400 hover:text-gray-600"
+                ? "bg-[#3d6b35] text-white shadow-md"
+                : "bg-white border-2 border-[#d4c9a8] text-[#5a5a48] hover:border-[#3d6b35] hover:text-[#3d6b35]"
             }`}
           >
             Top Sellers
           </button>
-
           <button
             onClick={() => setTab("new")}
-            className={`px-6 py-2 rounded-full text-sm font-semibold transition ${
+            className={`px-5 py-3 rounded-xl text-base font-bold transition-all ${
               tab === "new"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-400 hover:text-gray-600"
+                ? "bg-[#3d6b35] text-white shadow-md"
+                : "bg-white border-2 border-[#d4c9a8] text-[#5a5a48] hover:border-[#3d6b35] hover:text-[#3d6b35]"
             }`}
           >
             New Arrivals
           </button>
         </div>
 
-        <p className="text-xs tracking-[0.3em] uppercase text-gray-400 mb-3">
-          {tab === "top" ? "Best Sellers" : "New Arrivals"}
-        </p>
-
-        <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
-          {tab === "top"
-            ? "Our Customers' Favourites"
-            : "Fresh to the Garden Store"}
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#2a2a1e] font-outfit">
+          {tab === "top" ? "Our Customers' Favourites" : "Fresh to the Garden Store"}
         </h2>
       </div>
 
       {/* Product Grid */}
-      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         {products.map((product) => (
-          <div key={product.id} className="group">
-            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100">
+          <div key={product.id} className="flex flex-col bg-white rounded-2xl overflow-hidden border border-[#e8e0d0] hover:border-[#b8d4a0] hover:shadow-md transition-all duration-300 group">
 
-              {/* Badge */}
-              <span className="absolute top-3 left-3 z-10 bg-white/90 backdrop-blur text-xs font-semibold px-3 py-1 rounded-full">
+            {/* Image */}
+            <div className="relative aspect-square overflow-hidden bg-[#f5f0ea]">
+              <span className="absolute top-3 left-3 z-10 bg-[#3d6b35] text-white text-xs font-bold px-3 py-1 rounded-full">
                 {product.badge}
               </span>
-
               <Image
                 src={product.image}
                 alt={product.name}
                 fill
                 className="object-cover group-hover:scale-105 transition duration-500"
               />
-
-              {/* Hover Add to Cart */}
-              <div className="absolute inset-0 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100 transition">
-                <button className="flex items-center gap-2 bg-white text-sm font-semibold px-4 py-2 rounded-full shadow-md hover:bg-gray-100">
-                  <ShoppingCart size={16} />
-                  Add to Cart
-                </button>
-              </div>
             </div>
 
-            {/* Info */}
-            <div className="mt-3">
-              <h3 className="text-base font-semibold text-gray-900">
-                {product.name}
-              </h3>
+            {/* Info + CTA */}
+            <div className="p-3 sm:p-4 flex flex-col flex-1 gap-2">
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-[#2a2a1e] leading-snug">{product.name}</h3>
+                <p className="text-sm text-[#7a7a68] mt-0.5">{product.subtitle}</p>
+              </div>
 
-              <p className="text-sm text-gray-500">{product.subtitle}</p>
+              <div className="flex items-center justify-between mt-auto pt-1">
+                <p className="text-xl sm:text-2xl font-black text-[#3d6b35]">₹{product.price}</p>
+              </div>
 
-              <p className="text-base font-bold text-gray-900 mt-1">
-                ₹{product.price}
-              </p>
+              {/* Always-visible Add to Cart — large tap target */}
+              <button className="w-full flex items-center justify-center gap-2 bg-[#eef5ea] hover:bg-[#3d6b35] text-[#3d6b35] hover:text-white border-2 border-[#b8d4a0] hover:border-[#3d6b35] font-bold text-sm sm:text-base py-2.5 sm:py-3 rounded-xl transition-all duration-200 active:scale-95">
+                <ShoppingCart size={18} />
+                Add to Cart
+              </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* View All */}
-      <div className="text-center mt-14">
+      {/* View All — large button */}
+      <div className="text-center mt-10 sm:mt-14">
         <a
           href="/shop"
-          className="inline-block border border-gray-900 text-gray-900 text-sm font-semibold px-8 py-3 rounded-full hover:bg-gray-900 hover:text-white transition"
+          className="inline-flex items-center gap-2 bg-white border-2 border-[#3d6b35] text-[#3d6b35] hover:bg-[#3d6b35] hover:text-white font-bold text-base sm:text-lg px-8 py-4 rounded-xl transition-all duration-200"
         >
-          View All Products
+          View All Products →
         </a>
+      </div>
       </div>
     </section>
   );
