@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ChevronRight,
   MapPin,
@@ -12,7 +13,6 @@ import {
   Truck,
   ShieldCheck,
   Phone,
-  ChevronDown,
   Pencil,
   Check,
   Wallet,
@@ -93,10 +93,10 @@ const paymentMethods: PaymentMethod[] = [
   { id: "cod", label: "Cash on Delivery", icon: <Wallet size={22} />, desc: "Pay when your order arrives" },
 ];
 
-const STEPS: { id: Step; label: string; icon: React.ReactNode }[] = [
-  { id: "address", label: "Delivery Address", icon: <MapPin size={18} /> },
-  { id: "payment", label: "Payment Method", icon: <CreditCard size={18} /> },
-  { id: "review", label: "Review & Place Order", icon: <CheckCircle2 size={18} /> },
+const STEPS: { id: Step; label: string }[] = [
+  { id: "address", label: "Delivery Address" },
+  { id: "payment", label: "Payment Method" },
+  { id: "review", label: "Review & Place Order" },
 ];
 
 // ─── Step Progress Bar ────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ const StepBar = ({ current }: { current: Step }) => {
           <div key={step.id} className="flex items-center">
             <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm sm:text-base font-bold transition-all ${
               active ? "bg-[#3d6b35] text-white shadow-md" :
-              done  ? "bg-[#eef5ea] text-[#3d6b35] border border-[#b8d4a0]" :
+              done   ? "bg-[#eef5ea] text-[#3d6b35] border border-[#b8d4a0]" :
                        "bg-white text-[#a8a090] border border-[#e8e0d0]"
             }`}>
               <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
@@ -186,15 +186,12 @@ const AddressStep = ({
         <p className="text-base text-[#7a7a68] mt-1">Where should we deliver your order?</p>
       </div>
 
-      {/* Saved addresses */}
       {savedAddresses.map((addr, i) => (
         <button
           key={i}
           onClick={() => setSelected(i)}
           className={`w-full text-left flex items-start gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all ${
-            selected === i
-              ? "border-[#3d6b35] bg-[#eef5ea]"
-              : "border-[#e8e0d0] bg-white hover:border-[#a8c890]"
+            selected === i ? "border-[#3d6b35] bg-[#eef5ea]" : "border-[#e8e0d0] bg-white hover:border-[#a8c890]"
           }`}
         >
           <div className={`mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
@@ -220,7 +217,6 @@ const AddressStep = ({
         </button>
       ))}
 
-      {/* Add new address toggle */}
       <button
         onClick={() => setSelected("new")}
         className={`w-full flex items-center gap-3 p-4 sm:p-5 rounded-2xl border-2 transition-all ${
@@ -237,7 +233,6 @@ const AddressStep = ({
         <span className="text-base font-bold text-[#3d6b35]">Add a new address</span>
       </button>
 
-      {/* New address form */}
       {selected === "new" && (
         <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5 sm:p-6 flex flex-col gap-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -251,8 +246,6 @@ const AddressStep = ({
             <Field label="City / Town" value={form.city} onChange={set("city")} placeholder="e.g. Namakkal" required />
             <Field label="State" value={form.state} onChange={set("state")} placeholder="e.g. Tamil Nadu" required />
           </div>
-
-          {/* Address type */}
           <div>
             <label className="text-base font-bold text-[#2a2a1e] block mb-2">Address Type</label>
             <div className="flex gap-3 flex-wrap">
@@ -312,7 +305,6 @@ const PaymentStep = ({
         <p className="text-base text-[#7a7a68] mt-1">Choose how you'd like to pay for your order.</p>
       </div>
 
-      {/* Payment options */}
       <div className="flex flex-col gap-3">
         {paymentMethods.map((method) => (
           <div key={method.id}>
@@ -345,7 +337,6 @@ const PaymentStep = ({
               )}
             </button>
 
-            {/* Expanded detail for UPI */}
             {selected === "upi" && method.id === "upi" && (
               <div className="mt-2 bg-white border border-[#e8e0d0] rounded-2xl p-5">
                 <p className="text-base font-bold text-[#2a2a1e] mb-3">Enter your UPI ID</p>
@@ -364,7 +355,6 @@ const PaymentStep = ({
               </div>
             )}
 
-            {/* Expanded detail for Card */}
             {selected === "card" && method.id === "card" && (
               <div className="mt-2 bg-white border border-[#e8e0d0] rounded-2xl p-5 flex flex-col gap-4">
                 <p className="text-base font-bold text-[#2a2a1e]">Card Details</p>
@@ -381,7 +371,6 @@ const PaymentStep = ({
               </div>
             )}
 
-            {/* COD note */}
             {selected === "cod" && method.id === "cod" && (
               <div className="mt-2 bg-[#fff8ee] border border-[#f0d080] rounded-2xl p-4">
                 <p className="text-base text-[#7a5c1e] leading-relaxed">
@@ -434,7 +423,6 @@ const ReviewStep = ({
         <p className="text-base text-[#7a7a68] mt-1">Please check everything before placing your order.</p>
       </div>
 
-      {/* Address summary */}
       <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -455,7 +443,6 @@ const ReviewStep = ({
         </div>
       </div>
 
-      {/* Payment summary */}
       <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -477,9 +464,8 @@ const ReviewStep = ({
         </div>
       </div>
 
-      {/* Items summary */}
       <div className="bg-white border border-[#e8e0d0] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#e8e0d0] flex items-center gap-2">
+        <div className="px-5 py-4 border-b border-[#e8e0d0]">
           <span className="text-base font-bold text-[#2a2a1e]">Order Items ({cartItems.length})</span>
         </div>
         <div className="flex flex-col divide-y divide-[#f0ece4]">
@@ -513,7 +499,6 @@ const ReviewStep = ({
         </div>
       </div>
 
-      {/* Terms note */}
       <p className="text-sm text-[#7a7a68] leading-relaxed">
         By placing this order, you agree to our{" "}
         <Link href="/terms" className="text-[#3d6b35] font-semibold underline underline-offset-2">Terms & Conditions</Link>{" "}
@@ -543,9 +528,16 @@ const ReviewStep = ({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CheckoutPage() {
+  // FIX: use Next.js router instead of window.location.href
+  const router = useRouter();
+
   const [step, setStep] = useState<Step>("address");
   const [selectedAddress, setSelectedAddress] = useState<number | "new">(0);
   const [selectedPayment, setSelectedPayment] = useState("cod");
+
+  const handlePlaceOrder = () => {
+    router.push("/order-confirmation");
+  };
 
   return (
     <div className="min-h-screen bg-[#faf7f2]">
@@ -566,7 +558,7 @@ export default function CheckoutPage() {
 
         <div className="flex flex-col lg:flex-row gap-8 items-start">
 
-          {/* ── LEFT: Step Content ──────────────────── */}
+          {/* Step Content */}
           <div className="flex-1 min-w-0">
             {step === "address" && (
               <AddressStep
@@ -585,14 +577,14 @@ export default function CheckoutPage() {
             )}
             {step === "review" && (
               <ReviewStep
-                onPlace={() => window.location.href = "/order-confirmation"}
+                onPlace={handlePlaceOrder}
                 onBack={() => setStep("payment")}
                 paymentMethod={selectedPayment}
               />
             )}
           </div>
 
-          {/* ── RIGHT: Order Summary ────────────────── */}
+          {/* Order Summary Sidebar */}
           <div className="w-full lg:w-96 shrink-0 lg:sticky lg:top-24 flex flex-col gap-4">
             <div className="bg-white rounded-2xl border border-[#e8e0d0] overflow-hidden">
               <div className="bg-[#3d6b35] px-5 py-4 flex items-center justify-between">
@@ -635,7 +627,6 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Help */}
             <div className="bg-[#faf7f2] border border-[#d4c9a8] rounded-2xl px-5 py-4 flex items-start gap-3">
               <Phone size={20} className="text-[#3d6b35] shrink-0 mt-0.5" />
               <div>
@@ -647,7 +638,6 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Security */}
             <div className="flex items-center justify-center gap-2 text-sm text-[#7a7a68]">
               <ShieldCheck size={16} className="text-[#3d6b35]" />
               100% secure & encrypted checkout

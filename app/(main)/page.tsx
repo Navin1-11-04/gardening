@@ -6,22 +6,21 @@ import { HowToOrder } from "./_components/HowToOrder";
 import { Slider } from "./_components/Slider";
 import { TopSellersSection } from "./_components/TopSellerSection";
 
+export const metadata = {
+  title: "Kavin Organics — Home Garden Store",
+  description: "Quality seeds, fertilizers, pots and gardening essentials delivered to your door.",
+};
+
 export default function Home() {
   return (
     <>
-      {/* <Header/>
-      <Slider />
-      <Categories />
-      <HowToOrder/>
-      <TopSellersSection/> */}
-      {/* <Contact/> */}
       <Header />
       <Slider />
       <Categories />
-      <HowToOrder/>
-      <TopSellersSection/>
-      <HowToGrow/>
-      <Footer/>
+      <HowToOrder />
+      <TopSellersSection />
+      <HowToGrow />
+      <Footer />
     </>
   );
 }

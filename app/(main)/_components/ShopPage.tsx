@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ShoppingCart, SlidersHorizontal, X, ChevronDown, ChevronUp, Star } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -39,28 +40,23 @@ const products: Product[] = [
   { id: 4, name: "Coriander Seeds", subtitle: "Pack of 100 seeds", price: 59, category: "seeds", image: "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?w=600&auto=format&fit=crop&q=80", rating: 5, reviews: 203 },
   { id: 5, name: "Marigold Seeds", subtitle: "Vibrant flowering variety", price: 79, badge: "Popular", category: "seeds", image: "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=600&auto=format&fit=crop&q=80", rating: 4, reviews: 56 },
   { id: 6, name: "Basil Seeds", subtitle: "Aromatic herb seeds", price: 69, badge: "New", category: "seeds", image: "https://images.unsplash.com/photo-1618375569909-3c8616cf7733?w=600&auto=format&fit=crop&q=80", rating: 5, reviews: 91 },
-
   // Pots
   { id: 7, name: "Terracotta Pot", subtitle: "8 inch — handcrafted", price: 249, badge: "Best Seller", category: "pots", image: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=600&auto=format&fit=crop&q=80", rating: 5, reviews: 176 },
   { id: 8, name: "Ceramic Pot Set", subtitle: "Set of 3 — white finish", price: 599, originalPrice: 799, badge: "Sale", category: "pots", image: "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=600&auto=format&fit=crop&q=80", rating: 4, reviews: 43 },
   { id: 9, name: "Hanging Planter", subtitle: "Macramé with plastic pot", price: 349, badge: "New", category: "pots", image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop&q=80", rating: 4, reviews: 38 },
   { id: 10, name: "Clay Plant Pot", subtitle: "6 inch — indoor garden", price: 179, badge: "Popular", category: "pots", image: "https://images.unsplash.com/photo-1616627455680-0e60e2c3f5f5?w=600&auto=format&fit=crop&q=80", rating: 5, reviews: 112 },
-
   // Fertilizers
   { id: 11, name: "Vermicompost", subtitle: "5 kg — organic", price: 299, badge: "Best Seller", category: "fertilizers", image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=600&auto=format&fit=crop&q=80", rating: 5, reviews: 241 },
   { id: 12, name: "Neem Cake Powder", subtitle: "1 kg — natural pest repellent", price: 199, badge: "Organic", category: "fertilizers", image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&auto=format&fit=crop&q=80", rating: 5, reviews: 158 },
   { id: 13, name: "Seaweed Liquid", subtitle: "500ml concentrate", price: 249, badge: "New", category: "fertilizers", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&auto=format&fit=crop&q=80", rating: 4, reviews: 29 },
   { id: 14, name: "Bone Meal Powder", subtitle: "2 kg — slow release", price: 179, originalPrice: 219, badge: "Sale", category: "fertilizers", image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop&q=80", rating: 4, reviews: 67 },
-
   // Grow Bags
   { id: 15, name: "Fabric Grow Bag", subtitle: "15 litre — set of 3", price: 299, badge: "Best Seller", category: "grow-bags", image: "https://images.unsplash.com/photo-1599685315640-89c0f88c3b4e?w=600&auto=format&fit=crop&q=80", rating: 5, reviews: 189 },
   { id: 16, name: "Large Grow Bag", subtitle: "40 litre — heavy duty", price: 199, badge: "Popular", category: "grow-bags", image: "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=600&auto=format&fit=crop&q=80", rating: 4, reviews: 74 },
   { id: 17, name: "UV Grow Bag Kit", subtitle: "Set of 5 — UV resistant", price: 449, badge: "New", category: "grow-bags", image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop&q=80", rating: 4, reviews: 22 },
-
   // Coco Peats
   { id: 18, name: "Coco Peat Block", subtitle: "650g — expands to 8L", price: 129, badge: "Best Seller", category: "coco-peats", image: "https://images.unsplash.com/photo-1614594975525-e45190c55d0c?w=600&auto=format&fit=crop&q=80", rating: 5, reviews: 312 },
   { id: 19, name: "Coco Peat Powder", subtitle: "5 kg loose bag", price: 249, badge: "Popular", category: "coco-peats", image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&auto=format&fit=crop&q=80", rating: 4, reviews: 98 },
-
   // Tools
   { id: 20, name: "Garden Water Spray", subtitle: "1L — adjustable nozzle", price: 199, badge: "Popular", category: "tools", image: "https://images.unsplash.com/photo-1615486366482-4b7a30d1f9b3?w=600&auto=format&fit=crop&q=80", rating: 4, reviews: 85 },
   { id: 21, name: "Trowel & Fork Set", subtitle: "Stainless steel — ergonomic", price: 349, badge: "New", category: "tools", image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&auto=format&fit=crop&q=80", rating: 5, reviews: 47 },
@@ -88,11 +84,7 @@ const StarRating = ({ rating, reviews }: { rating: number; reviews: number }) =>
   <div className="flex items-center gap-1.5">
     <div className="flex">
       {[1, 2, 3, 4, 5].map((s) => (
-        <Star
-          key={s}
-          size={13}
-          className={s <= rating ? "text-[#d4a017] fill-[#d4a017]" : "text-[#d0c8b8]"}
-        />
+        <Star key={s} size={13} className={s <= rating ? "text-[#d4a017] fill-[#d4a017]" : "text-[#d0c8b8]"} />
       ))}
     </div>
     <span className="text-xs text-[#7a7a68]">({reviews})</span>
@@ -100,17 +92,22 @@ const StarRating = ({ rating, reviews }: { rating: number; reviews: number }) =>
 );
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
+// FIX: wrapped entire card in Link so clicking anywhere navigates to product page
 
 const ProductCard = ({ product }: { product: Product }) => {
   const [added, setAdded] = useState(false);
 
-  const handleAdd = () => {
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault(); // prevent Link navigation when tapping Add to Cart
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
 
   return (
-    <div className="flex flex-col bg-white rounded-2xl overflow-hidden border border-[#e8e0d0] hover:border-[#a8c890] hover:shadow-lg transition-all duration-300 group">
+    <Link
+      href={`/shop/product/${product.id}`}
+      className="flex flex-col bg-white rounded-2xl overflow-hidden border border-[#e8e0d0] hover:border-[#a8c890] hover:shadow-lg transition-all duration-300 group"
+    >
       {/* Image */}
       <div className="relative aspect-square overflow-hidden bg-[#f5f0ea]">
         {product.badge && (
@@ -159,7 +156,7 @@ const ProductCard = ({ product }: { product: Product }) => {
           {added ? "Added!" : "Add to Cart"}
         </button>
       </div>
-    </div>
+    </Link>
   );
 };
 
@@ -187,8 +184,6 @@ const FilterSidebar = ({
 
   return (
     <aside className="flex flex-col gap-4">
-
-      {/* Clear filters */}
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold text-[#2a2a1e]">Filters</h2>
         <button onClick={onClear} className="text-sm text-[#3d6b35] font-semibold hover:underline">
@@ -253,10 +248,7 @@ const FilterSidebar = ({
                     </svg>
                   )}
                 </div>
-                <span
-                  className="text-base text-[#3a3a2e] cursor-pointer select-none"
-                  onClick={() => onChange(!value)}
-                >
+                <span className="text-base text-[#3a3a2e] cursor-pointer select-none" onClick={() => onChange(!value)}>
                   {label}
                 </span>
               </label>
@@ -327,7 +319,7 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-[#faf7f2] font-sans">
 
-      {/* ── Hero Banner ─────────────────────────────────── */}
+      {/* Hero Banner */}
       <div className="relative w-full overflow-hidden" style={{ height: "clamp(180px, 28vw, 320px)" }}>
         <img
           src={heroBg[activeCategory] ?? heroBg.all}
@@ -340,8 +332,8 @@ export default function ShopPage() {
         />
         <div className="absolute inset-0 flex flex-col justify-end pb-8 sm:pb-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
-            <p className="text-white/70 text-sm font-medium mb-1">Shop /&nbsp;
-              <span className="text-white">{heroLabel}</span>
+            <p className="text-white/70 text-sm font-medium mb-1">
+              Shop / <span className="text-white">{heroLabel}</span>
             </p>
             <h1
               className="text-white font-black font-outfit leading-none"
@@ -356,8 +348,10 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {/* ── Category Tabs ────────────────────────────────── */}
-      <div className="bg-white border-b-2 border-[#e8e0d0] sticky top-[calc(var(--header-height,56px))] z-30">
+      {/* Category Tabs
+          FIX: sticky offset changed from --header-height var to fixed 88px
+          (header = ~56px nav + ~32px green help bar) */}
+      <div className="bg-white border-b-2 border-[#e8e0d0] sticky top-[88px] z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-1">
             {categories.map((cat) => (
@@ -377,17 +371,14 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {/* ── Main Content ─────────────────────────────────── */}
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-
         {/* Toolbar */}
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <p className="text-base text-[#5a5a48]">
             Showing <span className="font-bold text-[#2a2a1e]">{filtered.length}</span> products
           </p>
-
           <div className="flex items-center gap-3">
-            {/* Mobile filter toggle */}
             <button
               className="lg:hidden flex items-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#3a3a2e] font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors"
               onClick={() => setMobileFiltersOpen(true)}
@@ -395,8 +386,6 @@ export default function ShopPage() {
               <SlidersHorizontal size={18} />
               Filters
             </button>
-
-            {/* Sort */}
             <div className="relative">
               <select
                 value={sort}
@@ -412,9 +401,7 @@ export default function ShopPage() {
           </div>
         </div>
 
-        {/* Layout: sidebar + grid */}
         <div className="flex gap-8">
-
           {/* Sidebar — desktop only */}
           <div className="hidden lg:block w-64 shrink-0">
             <FilterSidebar
@@ -453,15 +440,13 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {/* ── Mobile Filter Drawer ─────────────────────────── */}
+      {/* Mobile Filter Drawer */}
       {mobileFiltersOpen && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/40 z-40"
             onClick={() => setMobileFiltersOpen(false)}
           />
-          {/* Drawer */}
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#faf7f2] rounded-t-3xl p-5 max-h-[80dvh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-xl font-bold text-[#2a2a1e]">Filters</h2>
