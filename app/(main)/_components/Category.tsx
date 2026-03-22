@@ -3,41 +3,42 @@
 import Link from "next/link";
 import Image from "next/image";
 
+// FIX: replaced /categories/*.jpg local paths with Unsplash URLs
 const categories = [
   {
     name: "Seeds",
-    href: "/shop/seeds",
+    href: "/shop?cat=seeds",
     description: "Vegetables, herbs & flowers",
     bgColor: "#e8f0e4",
-    image: "/categories/seeds.jpg",
+    image: "https://images.unsplash.com/photo-1592919505780-303950717480?w=800&auto=format&fit=crop&q=80",
   },
   {
     name: "Grow Bags",
-    href: "/shop/grow-bags",
+    href: "/shop?cat=grow-bags",
     description: "Fabric & plastic grow bags",
     bgColor: "#d4e8c2",
-    image: "/categories/grow_bags.jpg",
+    image: "https://images.unsplash.com/photo-1599685315640-89c0f88c3b4e?w=800&auto=format&fit=crop&q=80",
   },
   {
     name: "Fertilizers",
-    href: "/shop/fertilizers",
-    description: "Organic & chemical blends",
+    href: "/shop?cat=fertilizers",
+    description: "Organic & natural blends",
     bgColor: "#f0ead4",
-    image: "/categories/fertilizers.jpg",
+    image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
   },
   {
-    name: "Coco Peats",
-    href: "/shop/coco-peats",
+    name: "Coco Peat",
+    href: "/shop?cat=coco-peats",
     description: "Premium coco coir media",
     bgColor: "#e4d8c8",
-    image: "/categories/cocopeat.jpg",
+    image: "https://images.unsplash.com/photo-1614594975525-e45190c55d0c?w=800&auto=format&fit=crop&q=80",
   },
   {
     name: "Pots",
-    href: "/shop/pots",
+    href: "/shop?cat=pots",
     description: "Terracotta, ceramic & plastic",
     bgColor: "#e8ddd0",
-    image: "/categories/pots.jpg",
+    image: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=800&auto=format&fit=crop&q=80",
   },
 ];
 
@@ -47,7 +48,6 @@ export const Categories = () => {
   return (
     <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
 
-      {/* Header */}
       <div className="mb-7 sm:mb-10">
         <p className="text-sm tracking-[0.2em] uppercase text-[#7a9e5f] font-semibold mb-2">
           Browse by Category
@@ -57,7 +57,7 @@ export const Categories = () => {
         </h2>
       </div>
 
-      {/* Mobile: vertical list — large tap targets */}
+      {/* Mobile: vertical list */}
       <div className="sm:hidden flex flex-col gap-3">
         {categories.map((cat) => (
           <Link

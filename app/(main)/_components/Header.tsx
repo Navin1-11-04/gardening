@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Menu, Search, ShoppingCart, X, Phone } from "lucide-react";
 import Link from "next/link";
+import { useCart } from "../_context/CartContext";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -13,6 +14,20 @@ const navLinks = [
 
 export const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { totalItems } = useCart();
+  const [bump, setBump] = useState(false);
+  const prevTotal = useRef(totalItems);
+
+  // Animate badge when item count increases
+  useEffect(() => {
+    if (totalItems > prevTotal.current) {
+      setBump(true);
+      const t = setTimeout(() => setBump(false), 400);
+      prevTotal.current = totalItems;
+      return () => clearTimeout(t);
+    }
+    prevTotal.current = totalItems;
+  }, [totalItems]);
 
   return (
     <header className="w-full bg-[#faf7f2] sticky top-0 z-50 border-b-2 border-[#d4c9a8] shadow-sm">
@@ -68,9 +83,16 @@ export const Header = () => {
           >
             <ShoppingCart size={20} />
             <span className="hidden sm:inline text-sm font-bold">Cart</span>
-            <span className="absolute -top-1.5 -right-1.5 bg-[#e86c2c] text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold leading-none">
-              2
-            </span>
+            {totalItems > 0 && (
+              <span
+                className={`absolute -top-1.5 -right-1.5 bg-[#e86c2c] text-white text-xs min-w-[20px] h-5 flex items-center justify-center rounded-full font-bold leading-none px-1 transition-transform ${
+                  bump ? "scale-125" : "scale-100"
+                }`}
+                style={{ transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)" }}
+              >
+                {totalItems > 99 ? "99+" : totalItems}
+              </span>
+            )}
           </Link>
 
           <button

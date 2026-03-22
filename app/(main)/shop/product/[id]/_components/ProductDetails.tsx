@@ -17,6 +17,7 @@ import {
   ChevronUp,
   Check,
 } from "lucide-react";
+import { useCart } from "@/app/(main)/_context/CartContext";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -125,13 +126,24 @@ export default function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedWeight, setSelectedWeight] = useState(product.weights[1]);
   const [quantity, setQuantity] = useState(1);
-  const [addedToCart, setAddedToCart] = useState(false);
-
-  const handleAddToCart = () => {
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
-  };
-
+ const { addItem } = useCart();
+const [addedToCart, setAddedToCart] = useState(false);
+ 
+const handleAddToCart = () => {
+  addItem({
+    id: product.id,
+    name: product.name,
+    subtitle: product.subtitle,
+    variant: selectedWeight,
+    price: product.price,
+    originalPrice: product.originalPrice,
+    image: product.images[0],
+    badge: product.badge,
+    quantity,
+  });
+  setAddedToCart(true);
+  setTimeout(() => setAddedToCart(false), 2000);
+};
   const discount = Math.round((1 - product.price / product.originalPrice) * 100);
 
   return (

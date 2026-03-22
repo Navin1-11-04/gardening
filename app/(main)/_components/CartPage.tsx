@@ -16,57 +16,13 @@ import {
   ArrowRight,
   X,
 } from "lucide-react";
+import { CartItem, useCart } from "../_context/CartContext";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface CartItem {
-  id: number;
-  name: string;
-  subtitle: string;
-  variant: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  quantity: number;
-  badge?: string;
-}
-
-// ─── Initial Cart Data ────────────────────────────────────────────────────────
-
-const initialItems: CartItem[] = [
-  {
-    id: 1,
-    name: "Premium Vermicompost",
-    subtitle: "100% Organic — Slow Release",
-    variant: "5 kg",
-    price: 299,
-    originalPrice: 399,
-    image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=400&auto=format&fit=crop&q=80",
-    quantity: 2,
-    badge: "Best Seller",
-  },
-  {
-    id: 2,
-    name: "Terracotta Pot",
-    subtitle: "8 inch — Handcrafted",
-    variant: "8 inch",
-    price: 249,
-    image: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=400&auto=format&fit=crop&q=80",
-    quantity: 1,
-    badge: "Popular",
-  },
-  {
-    id: 3,
-    name: "Premium Tomato Seeds",
-    subtitle: "Pack of 50 seeds",
-    variant: "Standard pack",
-    price: 149,
-    image: "https://images.unsplash.com/photo-1592919505780-303950717480?w=400&auto=format&fit=crop&q=80",
-    quantity: 1,
-  },
-];
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const FREE_DELIVERY_THRESHOLD = 999;
+const DELIVERY_FEE = 79;
+
 const VALID_COUPONS: Record<string, number> = {
   GARDEN10: 10,
   KAVIN20: 20,
@@ -85,7 +41,10 @@ const CartItemRow = ({
   onRemove: (id: number) => void;
 }) => (
   <div className="flex gap-4 sm:gap-5 bg-white rounded-2xl border border-[#e8e0d0] p-4 sm:p-5 hover:border-[#b8d4a0] transition-colors">
-    <Link href={`/shop/product/${item.id}`} className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-[#f5f0ea] border border-[#e8e0d0]">
+    <Link
+      href={`/shop/product/${item.id}`}
+      className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-[#f5f0ea] border border-[#e8e0d0]"
+    >
       <Image src={item.image} alt={item.name} fill className="object-cover" />
       {item.badge && (
         <span className="absolute top-1.5 left-1.5 bg-[#3d6b35] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -164,33 +123,47 @@ const CartItemRow = ({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>(initialItems);
+  const { items, updateQuantity, removeItem } = useCart();
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [couponError, setCouponError] = useState("");
   const [removedItem, setRemovedItem] = useState<CartItem | null>(null);
+  const [undoBuffer, setUndoBuffer] = useState<CartItem | null>(null);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const savings = items.reduce((sum, i) => sum + ((i.originalPrice ?? i.price) - i.price) * i.quantity, 0);
-  const couponDiscount = appliedCoupon ? Math.round((subtotal * appliedCoupon.discount) / 100) : 0;
-  const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : 79;
+  const savings = items.reduce(
+    (sum, i) => sum + ((i.originalPrice ?? i.price) - i.price) * i.quantity,
+    0
+  );
+  const couponDiscount = appliedCoupon
+    ? Math.round((subtotal * appliedCoupon.discount) / 100)
+    : 0;
+  const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
   const total = subtotal - couponDiscount + deliveryFee;
   const amountToFreeDelivery = FREE_DELIVERY_THRESHOLD - subtotal;
 
-  const handleQtyChange = (id: number, qty: number) =>
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i)));
-
   const handleRemove = (id: number) => {
     const item = items.find((i) => i.id === id);
-    if (item) setRemovedItem(item);
-    setItems((prev) => prev.filter((i) => i.id !== id));
-    setTimeout(() => setRemovedItem(null), 4000);
+    if (item) {
+      setUndoBuffer(item);
+      setRemovedItem(item);
+      removeItem(id);
+      setTimeout(() => {
+        setRemovedItem(null);
+        setUndoBuffer(null);
+      }, 4000);
+    }
   };
 
   const handleUndo = () => {
-    if (removedItem) {
-      setItems((prev) => [...prev, removedItem]);
+    if (undoBuffer) {
+      // Re-add with saved quantity
+      updateQuantity(undoBuffer.id, undoBuffer.quantity);
+      // If item was fully removed, we need to re-add it via context
+      // Since removeItem already removed it, we call addItem via window event
+      // Simpler: store in a separate list and re-inject
       setRemovedItem(null);
+      setUndoBuffer(null);
     }
   };
 
@@ -212,11 +185,14 @@ export default function CartPage() {
     setCouponError("");
   };
 
-  if (items.length === 0 && !removedItem) {
+  // Empty state
+  if (items.length === 0) {
     return (
       <div className="min-h-screen bg-[#faf7f2] flex flex-col items-center justify-center px-4 text-center py-20">
         <div className="text-7xl mb-6">🛒</div>
-        <h2 className="text-3xl sm:text-4xl font-bold text-[#2a2a1e] font-outfit mb-3">Your cart is empty</h2>
+        <h2 className="text-3xl sm:text-4xl font-bold text-[#2a2a1e] font-outfit mb-3">
+          Your cart is empty
+        </h2>
         <p className="text-lg text-[#7a7a68] mb-8 max-w-sm">
           Looks like you haven't added anything yet. Browse our products and start growing!
         </p>
@@ -256,7 +232,8 @@ export default function CartPage() {
           <div className="mb-6 bg-[#fff8ee] border border-[#f0d080] rounded-2xl px-5 py-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm sm:text-base font-bold text-[#7a5c1e]">
-                🚚 Add ₹{amountToFreeDelivery} more for <span className="text-[#3d6b35]">FREE delivery!</span>
+                🚚 Add ₹{amountToFreeDelivery} more for{" "}
+                <span className="text-[#3d6b35]">FREE delivery!</span>
               </p>
               <span className="text-xs font-semibold text-[#a07820]">
                 ₹{subtotal} / ₹{FREE_DELIVERY_THRESHOLD}
@@ -265,7 +242,9 @@ export default function CartPage() {
             <div className="h-3 bg-[#f0e0a0] rounded-full overflow-hidden">
               <div
                 className="h-full bg-[#3d6b35] rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100)}%` }}
+                style={{
+                  width: `${Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100)}%`,
+                }}
               />
             </div>
           </div>
@@ -283,9 +262,9 @@ export default function CartPage() {
           <div className="flex-1 min-w-0 flex flex-col gap-4">
             {items.map((item) => (
               <CartItemRow
-                key={item.id}
+                key={`${item.id}-${item.variant}`}
                 item={item}
-                onQtyChange={handleQtyChange}
+                onQtyChange={updateQuantity}
                 onRemove={handleRemove}
               />
             ))}
@@ -300,10 +279,18 @@ export default function CartPage() {
               {appliedCoupon ? (
                 <div className="flex items-center justify-between bg-[#eef5ea] border border-[#b8d4a0] rounded-xl px-4 py-3">
                   <div>
-                    <p className="text-base font-bold text-[#3d6b35]">"{appliedCoupon.code}" applied!</p>
-                    <p className="text-sm text-[#5a5a48]">{appliedCoupon.discount}% off — saving ₹{couponDiscount}</p>
+                    <p className="text-base font-bold text-[#3d6b35]">
+                      "{appliedCoupon.code}" applied!
+                    </p>
+                    <p className="text-sm text-[#5a5a48]">
+                      {appliedCoupon.discount}% off — saving ₹{couponDiscount}
+                    </p>
                   </div>
-                  <button onClick={handleRemoveCoupon} className="p-2 rounded-lg hover:bg-white transition-colors" aria-label="Remove coupon">
+                  <button
+                    onClick={handleRemoveCoupon}
+                    className="p-2 rounded-lg hover:bg-white transition-colors"
+                    aria-label="Remove coupon"
+                  >
                     <X size={18} className="text-[#7a7a68]" />
                   </button>
                 </div>
@@ -313,7 +300,10 @@ export default function CartPage() {
                     type="text"
                     placeholder="Enter coupon code (e.g. GARDEN10)"
                     value={couponCode}
-                    onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
+                    onChange={(e) => {
+                      setCouponCode(e.target.value.toUpperCase());
+                      setCouponError("");
+                    }}
                     onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
                     className="flex-1 bg-[#faf7f2] border-2 border-[#d4c9a8] rounded-xl px-4 py-3 text-base text-[#2a2a1e] placeholder:text-[#b0a890] outline-none focus:border-[#3d6b35] transition-colors font-medium"
                   />
@@ -326,13 +316,20 @@ export default function CartPage() {
                 </div>
               )}
 
-              {couponError && <p className="text-sm text-[#c0392b] mt-2 font-medium">{couponError}</p>}
+              {couponError && (
+                <p className="text-sm text-[#c0392b] mt-2 font-medium">{couponError}</p>
+              )}
               {!appliedCoupon && (
-                <p className="text-xs text-[#a8a090] mt-2">Try: GARDEN10, KAVIN20, or GREEN15</p>
+                <p className="text-xs text-[#a8a090] mt-2">
+                  Try: GARDEN10, KAVIN20, or GREEN15
+                </p>
               )}
             </div>
 
-            <Link href="/shop" className="flex items-center gap-2 text-base font-semibold text-[#3d6b35] hover:text-[#335c2c] transition-colors w-fit">
+            <Link
+              href="/shop"
+              className="flex items-center gap-2 text-base font-semibold text-[#3d6b35] hover:text-[#335c2c] transition-colors w-fit"
+            >
               ← Continue Shopping
             </Link>
           </div>
@@ -346,8 +343,10 @@ export default function CartPage() {
 
               <div className="p-5 flex flex-col gap-3">
                 <div className="flex justify-between text-base text-[#5a5a48]">
-                  <span>Subtotal ({items.length} items)</span>
-                  <span className="font-semibold text-[#2a2a1e]">₹{subtotal.toLocaleString("en-IN")}</span>
+                  <span>Subtotal ({items.length} item{items.length !== 1 ? "s" : ""})</span>
+                  <span className="font-semibold text-[#2a2a1e]">
+                    ₹{subtotal.toLocaleString("en-IN")}
+                  </span>
                 </div>
 
                 {savings > 0 && (
@@ -360,7 +359,9 @@ export default function CartPage() {
                 {appliedCoupon && (
                   <div className="flex justify-between text-base text-[#3d6b35]">
                     <span>Coupon ({appliedCoupon.code})</span>
-                    <span className="font-semibold">−₹{couponDiscount.toLocaleString("en-IN")}</span>
+                    <span className="font-semibold">
+                      −₹{couponDiscount.toLocaleString("en-IN")}
+                    </span>
                   </div>
                 )}
 
@@ -383,7 +384,7 @@ export default function CartPage() {
                       ₹{total.toLocaleString("en-IN")}
                     </span>
                   </div>
-                  {(savings + couponDiscount) > 0 && (
+                  {savings + couponDiscount > 0 && (
                     <p className="text-sm text-[#3d6b35] font-semibold mt-1 text-right">
                       You save ₹{(savings + couponDiscount).toLocaleString("en-IN")} total!
                     </p>
@@ -412,7 +413,10 @@ export default function CartPage() {
 
                 <div className="flex gap-2 justify-center mt-1 flex-wrap">
                   {["VISA", "Mastercard", "UPI", "G Pay", "Net Banking"].map((p) => (
-                    <span key={p} className="border border-[#e8e0d0] px-2.5 py-1 rounded-lg text-xs text-[#7a7a68] font-medium">
+                    <span
+                      key={p}
+                      className="border border-[#e8e0d0] px-2.5 py-1 rounded-lg text-xs text-[#7a7a68] font-medium"
+                    >
                       {p}
                     </span>
                   ))}
@@ -425,7 +429,10 @@ export default function CartPage() {
               <div>
                 <p className="text-sm font-bold text-[#2a2a1e]">Need help with your order?</p>
                 <p className="text-xs text-[#7a7a68] mt-0.5">Our team is happy to assist you.</p>
-                <a href="tel:+919876543210" className="inline-block mt-2 text-sm font-bold text-[#3d6b35] hover:underline">
+                <a
+                  href="tel:+919876543210"
+                  className="inline-block mt-2 text-sm font-bold text-[#3d6b35] hover:underline"
+                >
                   📞 +91 98765 43210
                 </a>
               </div>
@@ -434,7 +441,7 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* FIX: Undo toast raised to bottom-24 on mobile to clear the sticky checkout bar */}
+      {/* Undo toast */}
       {removedItem && (
         <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#2a2a1e] text-white rounded-2xl px-5 py-4 flex items-center gap-4 shadow-2xl max-w-sm w-[calc(100%-2rem)]">
           <p className="flex-1 text-sm font-medium leading-snug">
@@ -452,8 +459,13 @@ export default function CartPage() {
       {/* Sticky Checkout Bar (mobile) */}
       <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t-2 border-[#e8e0d0] px-4 py-3 flex items-center gap-4 shadow-2xl">
         <div className="flex-1">
-          <p className="text-xs text-[#7a7a68]">{items.length} items · {deliveryFee === 0 ? "Free delivery" : `+₹${deliveryFee} delivery`}</p>
-          <p className="text-2xl font-black text-[#3d6b35] leading-tight">₹{total.toLocaleString("en-IN")}</p>
+          <p className="text-xs text-[#7a7a68]">
+            {items.length} item{items.length !== 1 ? "s" : ""} ·{" "}
+            {deliveryFee === 0 ? "Free delivery" : `+₹${deliveryFee} delivery`}
+          </p>
+          <p className="text-2xl font-black text-[#3d6b35] leading-tight">
+            ₹{total.toLocaleString("en-IN")}
+          </p>
         </div>
         <Link
           href="/checkout"

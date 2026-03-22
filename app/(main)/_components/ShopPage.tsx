@@ -4,16 +4,16 @@ import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, SlidersHorizontal, X, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { useCart } from "../_context/CartContext";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-
 interface Product {
   id: number;
   name: string;
   subtitle: string;
   price: number;
   originalPrice?: number;
-  badge?: "Best Seller" | "New" | "Sale" | "Popular" | "Organic";
+  badge?: string;
   category: string;
   image: string;
   rating: number;
@@ -70,6 +70,9 @@ const sortOptions = [
   { value: "newest", label: "Newest First" },
 ];
 
+
+// ─── Star Rating ─────────────────────────────────────────────────────────────
+
 const badgeColors: Record<string, string> = {
   "Best Seller": "bg-[#3d6b35] text-white",
   "New": "bg-[#1a6b8a] text-white",
@@ -77,9 +80,7 @@ const badgeColors: Record<string, string> = {
   "Popular": "bg-[#7a5c1e] text-white",
   "Organic": "bg-[#5a8a2e] text-white",
 };
-
-// ─── Star Rating ─────────────────────────────────────────────────────────────
-
+ 
 const StarRating = ({ rating, reviews }: { rating: number; reviews: number }) => (
   <div className="flex items-center gap-1.5">
     <div className="flex">
@@ -90,28 +91,39 @@ const StarRating = ({ rating, reviews }: { rating: number; reviews: number }) =>
     <span className="text-xs text-[#7a7a68]">({reviews})</span>
   </div>
 );
-
 // ─── Product Card ─────────────────────────────────────────────────────────────
 // FIX: wrapped entire card in Link so clicking anywhere navigates to product page
 
-const ProductCard = ({ product }: { product: Product }) => {
-  const [added, setAdded] = useState(false);
-
+export const ProductCard = ({ product }: { product: Product }) => {
+  const { addItem, isInCart } = useCart();
+  const [justAdded, setJustAdded] = useState(false);
+ 
   const handleAdd = (e: React.MouseEvent) => {
-    e.preventDefault(); // prevent Link navigation when tapping Add to Cart
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
+    e.preventDefault();
+    addItem({
+      id: product.id,
+      name: product.name,
+      subtitle: product.subtitle,
+      variant: "Standard",
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: product.image,
+      badge: product.badge,
+    });
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1500);
   };
-
+ 
+  const inCart = isInCart(product.id);
+ 
   return (
     <Link
       href={`/shop/product/${product.id}`}
       className="flex flex-col bg-white rounded-2xl overflow-hidden border border-[#e8e0d0] hover:border-[#a8c890] hover:shadow-lg transition-all duration-300 group"
     >
-      {/* Image */}
       <div className="relative aspect-square overflow-hidden bg-[#f5f0ea]">
         {product.badge && (
-          <span className={`absolute top-3 left-3 z-10 text-xs font-bold px-3 py-1 rounded-full ${badgeColors[product.badge]}`}>
+          <span className={`absolute top-3 left-3 z-10 text-xs font-bold px-3 py-1 rounded-full ${badgeColors[product.badge] ?? "bg-[#3d6b35] text-white"}`}>
             {product.badge}
           </span>
         )}
@@ -127,33 +139,31 @@ const ProductCard = ({ product }: { product: Product }) => {
           className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
       </div>
-
-      {/* Info */}
+ 
       <div className="p-3 sm:p-4 flex flex-col flex-1 gap-2">
         <div>
           <h3 className="text-sm sm:text-base font-bold text-[#2a2a1e] leading-snug">{product.name}</h3>
           <p className="text-xs sm:text-sm text-[#7a7a68] mt-0.5">{product.subtitle}</p>
         </div>
-
         <StarRating rating={product.rating} reviews={product.reviews} />
-
         <div className="flex items-baseline gap-2 mt-auto">
           <span className="text-lg sm:text-xl font-black text-[#3d6b35]">₹{product.price}</span>
           {product.originalPrice && (
             <span className="text-sm text-[#a8a090] line-through">₹{product.originalPrice}</span>
           )}
         </div>
-
         <button
           onClick={handleAdd}
           className={`w-full flex items-center justify-center gap-2 font-bold text-sm py-2.5 rounded-xl transition-all duration-200 active:scale-95 ${
-            added
+            justAdded
               ? "bg-[#3d6b35] text-white"
+              : inCart
+              ? "bg-[#eef5ea] text-[#3d6b35] border-2 border-[#3d6b35]"
               : "bg-[#eef5ea] hover:bg-[#3d6b35] text-[#3d6b35] hover:text-white border-2 border-[#b8d4a0] hover:border-[#3d6b35]"
           }`}
         >
           <ShoppingCart size={16} />
-          {added ? "Added!" : "Add to Cart"}
+          {justAdded ? "Added!" : inCart ? "In Cart ✓" : "Add to Cart"}
         </button>
       </div>
     </Link>
