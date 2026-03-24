@@ -8,11 +8,12 @@ export const metadata = {
   description: "Step-by-step guide to starting your home garden. Covers seeds, soil, watering, sunlight and harvesting.",
 };
 
-export default function GuideArticle({ params }: { params: { slug: string } }) {
+export default async function GuideArticle({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   return (
     <>
       <Header />
-      <GuideArticlePage slug={params.slug} />
+      <GuideArticlePage slug={slug} />
       <Footer />
     </>
   );

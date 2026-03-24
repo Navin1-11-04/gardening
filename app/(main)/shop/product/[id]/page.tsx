@@ -3,10 +3,12 @@ import { Footer } from "../../../_components/Footer";
 import ProductDetails from "./_components/ProductDetails";
 
 // Dynamic metadata per product — reads from API at request time
-export async function generateMetadata({ params }: { params: { id: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/products/${params.id}`,
+      `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/products/${id}`,
       { next: { revalidate: 3600 } }
     );
     if (!res.ok) return { title: "Product — Kavin Organics" };
@@ -20,12 +22,12 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   }
 }
 
-export default function ProductPage({ params }: { params: { id: string } }) {
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   return (
     <>
       <Header />
-      {/* Pass the real id — ProductDetails fetches the correct product */}
-      <ProductDetails productId={params.id} />
+      <ProductDetails productId={id} />
       <Footer />
     </>
   );
