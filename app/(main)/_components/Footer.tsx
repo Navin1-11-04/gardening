@@ -4,10 +4,34 @@ import { Truck, RotateCcw, ShieldCheck, Headphones, Phone, Mail } from "lucide-r
 import Link from "next/link";
 
 const features = [
-  { icon: Truck, title: "Free Delivery", text: "On orders above ₹999" },
-  { icon: RotateCcw, title: "Easy Returns", text: "Within 7 days" },
-  { icon: ShieldCheck, title: "Safe Payments", text: "Trusted & secure" },
-  { icon: Headphones, title: "Garden Support", text: "Call us anytime" },
+  { icon: Truck,        title: "Free Delivery",  text: "On orders above ₹999" },
+  { icon: RotateCcw,    title: "Easy Returns",   text: "Within 7 days" },
+  { icon: ShieldCheck,  title: "Safe Payments",  text: "Trusted & secure" },
+  { icon: Headphones,   title: "Garden Support", text: "Call us anytime" },
+];
+
+// FIX: shop links use /shop?cat=X to match ShopPage's activeCategory query param logic
+const shopLinks: [string, string][] = [
+  ["Seeds",       "/shop?cat=seeds"],
+  ["Grow Bags",   "/shop?cat=grow-bags"],
+  ["Fertilizers", "/shop?cat=fertilizers"],
+  ["Pots",        "/shop?cat=pots"],
+  ["Coco Peat",   "/shop?cat=coco-peats"],
+];
+
+const guideLinks: [string, string][] = [
+  ["Grow Tomatoes",  "/guides/how-to-grow-tomatoes-at-home"],
+  ["Balcony Garden", "/guides/balcony-gardening-guide"],
+  ["Using Cocopeat", "/guides/what-is-cocopeat-and-how-to-use-it"],
+  ["Beginner Tips",  "/guides/beginners-guide-to-home-gardening"],
+];
+
+const helpLinks: [string, string][] = [
+  ["Contact Us", "/contact"],
+  ["FAQs",       "/faq"],
+  ["Shipping",   "/shipping"],
+  ["Returns",    "/returns"],
+  ["Privacy",    "/privacy"],
 ];
 
 export const Footer = () => {
@@ -45,22 +69,15 @@ export const Footer = () => {
             Helping you grow a greener home garden with quality seeds, fertilizers, pots and more.
           </p>
 
-          {/* Contact info — prominent for elderly */}
           <div className="flex flex-col gap-3">
-            <a
-              href="tel:+919876543210"
-              className="flex items-center gap-3 bg-[#3d6b35]/30 hover:bg-[#3d6b35]/50 border border-[#3d6b35]/50 rounded-xl px-4 py-3 transition-colors w-fit"
-            >
+            <a href="tel:+919876543210" className="flex items-center gap-3 bg-[#3d6b35]/30 hover:bg-[#3d6b35]/50 border border-[#3d6b35]/50 rounded-xl px-4 py-3 transition-colors w-fit">
               <Phone size={20} className="text-[#a8d878] shrink-0" />
               <div>
                 <p className="text-xs text-gray-400">Call us</p>
                 <p className="text-base font-bold text-white">+91 98765 43210</p>
               </div>
             </a>
-            <a
-              href="mailto:hello@kavinorganics.in"
-              className="flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-3 transition-colors w-fit"
-            >
+            <a href="mailto:hello@kavinorganics.in" className="flex items-center gap-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-3 transition-colors w-fit">
               <Mail size={20} className="text-[#a8d878] shrink-0" />
               <div>
                 <p className="text-xs text-gray-400">Email us</p>
@@ -72,12 +89,12 @@ export const Footer = () => {
           <p className="text-sm text-gray-600 mt-6">© 2025 Kavin Organics. All Rights Reserved</p>
         </div>
 
-        {/* Links — large, legible */}
+        {/* Links */}
         <div className="grid grid-cols-3 gap-4 sm:gap-8">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Shop</p>
             <ul className="space-y-3">
-              {[["Seeds", "/shop/seeds"], ["Grow Bags", "/shop/grow-bags"], ["Fertilizers", "/shop/fertilizers"], ["Pots", "/shop/pots"], ["Coco Peat", "/shop/cocopeat"]].map(([label, href]) => (
+              {shopLinks.map(([label, href]) => (
                 <li key={label}>
                   <Link href={href} className="text-base text-gray-400 hover:text-white transition-colors">
                     {label}
@@ -90,9 +107,9 @@ export const Footer = () => {
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Guides</p>
             <ul className="space-y-3">
-              {["Grow Tomatoes", "Balcony Garden", "Using Cocopeat", "Beginner Tips"].map((label) => (
+              {guideLinks.map(([label, href]) => (
                 <li key={label}>
-                  <Link href="#" className="text-base text-gray-400 hover:text-white transition-colors">
+                  <Link href={href} className="text-base text-gray-400 hover:text-white transition-colors">
                     {label}
                   </Link>
                 </li>
@@ -103,7 +120,7 @@ export const Footer = () => {
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Help</p>
             <ul className="space-y-3">
-              {[["Contact Us", "/contact"], ["FAQs", "/faq"], ["Shipping", "/shipping"], ["Returns", "/returns"], ["Privacy", "/privacy"]].map(([label, href]) => (
+              {helpLinks.map(([label, href]) => (
                 <li key={label}>
                   <Link href={href} className="text-base text-gray-400 hover:text-white transition-colors">
                     {label}
@@ -133,11 +150,8 @@ export const Footer = () => {
           </button>
         </div>
 
-        <p className="text-sm text-gray-600 mt-3">
-          We respect your privacy. Unsubscribe anytime.
-        </p>
+        <p className="text-sm text-gray-600 mt-3">We respect your privacy. Unsubscribe anytime.</p>
 
-        {/* Payment icons */}
         <div className="flex gap-2 mt-6">
           {["VISA", "Mastercard", "UPI", "G Pay"].map((p) => (
             <span key={p} className="border border-white/15 px-3 py-1.5 rounded-lg text-xs text-gray-500 font-medium">
