@@ -10,14 +10,14 @@ const categories = [
     href: "/shop?cat=seeds",
     description: "Vegetables, herbs & flowers",
     bgColor: "#e8f0e4",
-    image: "https://images.unsplash.com/photo-1592919505780-303950717480?w=800&auto=format&fit=crop&q=80",
+    image: "https://i.pinimg.com/736x/52/91/fc/5291fc257357f84e4837c2e1b5dae463.jpg",
   },
   {
     name: "Grow Bags",
     href: "/shop?cat=grow-bags",
     description: "Fabric & plastic grow bags",
     bgColor: "#d4e8c2",
-    image: "https://images.unsplash.com/photo-1599685315640-89c0f88c3b4e?w=800&auto=format&fit=crop&q=80",
+    image: "https://i.pinimg.com/1200x/23/ab/71/23ab71c9c53e2315ad509ac9dbc50dc9.jpg",
   },
   {
     name: "Fertilizers",
@@ -31,14 +31,14 @@ const categories = [
     href: "/shop?cat=coco-peats",
     description: "Premium coco coir media",
     bgColor: "#e4d8c8",
-    image: "https://images.unsplash.com/photo-1614594975525-e45190c55d0c?w=800&auto=format&fit=crop&q=80",
+    image: "https://i.pinimg.com/736x/dd/5a/c0/dd5ac04cbd26a08eecf3af5caf9e83e4.jpg",
   },
   {
     name: "Pots",
     href: "/shop?cat=pots",
     description: "Terracotta, ceramic & plastic",
     bgColor: "#e8ddd0",
-    image: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=800&auto=format&fit=crop&q=80",
+    image: "https://i.pinimg.com/1200x/58/57/f1/5857f1ee385f06a0d65759465c5936df.jpg",
   },
 ];
 

@@ -39,8 +39,8 @@ export const products: Product[] = [
     badge: "Best Seller",
     category: "seeds",
     images: [
-      "https://images.unsplash.com/photo-1592919505780-303950717480?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/a2/14/7a/a2147ab076dc62793447212faf8f1a62.jpg",
+      "https://i.pinimg.com/1200x/bd/02/43/bd024358692933117b317914c3698664.jpg",
     ],
     rating: 5, reviews: 128, weights: ["1 pack (50 seeds)", "3 pack bundle"],
     sku: "KO-SEED-001", inStock: true, deliveryDays: "2–4",
@@ -81,8 +81,8 @@ export const products: Product[] = [
     badge: "Sale",
     category: "seeds",
     images: [
-      "https://images.unsplash.com/photo-1607190074257-dd4b7af0309f?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/4c/d7/96/4cd796857e1624dabf05ed3ffd9f2dc3.jpg",
+      "https://i.pinimg.com/1200x/2b/5b/47/2b5b47767eb49e81930b93cbc5693370.jpg",
     ],
     rating: 4, reviews: 87, weights: ["1 pack (30 seeds)"],
     sku: "KO-SEED-003", inStock: true, deliveryDays: "2–4",
@@ -101,8 +101,8 @@ export const products: Product[] = [
     price: 59,
     category: "seeds",
     images: [
-      "https://images.unsplash.com/photo-1556801712-76c8eb07bbc9?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/7c/de/41/7cde410194039f575908d74d26b6d1f9.jpg",
+      "https://i.pinimg.com/736x/5f/40/41/5f40417a069e53ae0e7ee0ae8cf3cf48.jpg",
     ],
     rating: 5, reviews: 203, weights: ["1 pack (100 seeds)", "3 pack bundle"],
     sku: "KO-SEED-004", inStock: true, deliveryDays: "2–4",
@@ -122,8 +122,8 @@ export const products: Product[] = [
     badge: "Popular",
     category: "seeds",
     images: [
-      "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/a4/49/1b/a4491bb2b9f61201f9c19d401f471724.jpg",
+      "https://i.pinimg.com/1200x/d7/0f/5c/d70f5c33941429100f8b5b4c88129a82.jpg",
     ],
     rating: 4, reviews: 56, weights: ["1 pack (50 seeds)"],
     sku: "KO-SEED-005", inStock: true, deliveryDays: "2–4",
@@ -143,8 +143,8 @@ export const products: Product[] = [
     badge: "New",
     category: "seeds",
     images: [
-      "https://images.unsplash.com/photo-1618375569909-3c8616cf7733?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/736x/75/f2/23/75f2232abd70661e3d6b1ddc7a02b499.jpg",
+      "https://i.pinimg.com/736x/7c/cc/53/7ccc53e558dbb875b29caf63b4f29328.jpg",
     ],
     rating: 5, reviews: 91, weights: ["1 pack (40 seeds)"],
     sku: "KO-SEED-006", inStock: true, deliveryDays: "2–4",
@@ -166,8 +166,8 @@ export const products: Product[] = [
     badge: "Best Seller",
     category: "pots",
     images: [
-      "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/736x/66/bb/fa/66bbfaeccf82081db60395cc6151863f.jpg",
+      "https://i.pinimg.com/1200x/49/01/24/490124d7d0009be990b7e6afa3da4bdb.jpg",
     ],
     rating: 5, reviews: 176, weights: ["6 inch", "8 inch", "10 inch", "12 inch"],
     sku: "KO-POT-001", inStock: true, deliveryDays: "2–4",
@@ -187,8 +187,8 @@ export const products: Product[] = [
     badge: "Sale",
     category: "pots",
     images: [
-      "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/e3/4a/44/e34a4426f77c3326952099b65863b88d.jpg",
+      "https://i.pinimg.com/736x/04/d4/28/04d428a861219966ef33557fd734519f.jpg",
     ],
     rating: 4, reviews: 43, weights: ["Set of 3 (small + medium + large)"],
     sku: "KO-POT-002", inStock: true, deliveryDays: "2–4",
@@ -208,7 +208,7 @@ export const products: Product[] = [
     badge: "New",
     category: "pots",
     images: [
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/736x/50/f8/d3/50f8d34e1c239b7674de657ad6b92f3c.jpg",
     ],
     rating: 4, reviews: 38, weights: ["6 inch pot + hanger"],
     sku: "KO-POT-003", inStock: true, deliveryDays: "2–4",
@@ -228,8 +228,8 @@ export const products: Product[] = [
     badge: "Popular",
     category: "pots",
     images: [
-      "https://images.unsplash.com/photo-1616627455680-0e60e2c3f5f5?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/736x/19/62/ba/1962ba319e5c7dc4bbd5ff4562260ebe.jpg",
+      "https://i.pinimg.com/1200x/65/22/61/652261e52cfa9f847332f56e861ca535.jpg",
     ],
     rating: 5, reviews: 112, weights: ["6 inch", "8 inch"],
     sku: "KO-POT-004", inStock: true, deliveryDays: "2–4",
@@ -251,8 +251,8 @@ export const products: Product[] = [
     badge: "Best Seller",
     category: "fertilizers",
     images: [
-      "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/be/35/00/be3500059b0dc21b9fc51db357353594.jpg",
+      "https://i.pinimg.com/1200x/72/4b/f5/724bf56f26d9a31b3f007decddd665f4.jpg",
     ],
     rating: 5, reviews: 241, weights: ["1 kg", "3 kg", "5 kg"],
     sku: "KO-FERT-001", inStock: true, deliveryDays: "2–4",
@@ -272,7 +272,7 @@ export const products: Product[] = [
     badge: "Organic",
     category: "fertilizers",
     images: [
-      "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/736x/d1/22/44/d12244fad4a3f0349e1c4cbcf63d5156.jpg",
     ],
     rating: 5, reviews: 158, weights: ["500 g", "1 kg", "2 kg"],
     sku: "KO-FERT-002", inStock: true, deliveryDays: "2–4",
@@ -292,7 +292,7 @@ export const products: Product[] = [
     badge: "New",
     category: "fertilizers",
     images: [
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/736x/72/2a/a1/722aa11f11409ccbeee874dc6280b0a8.jpg",
     ],
     rating: 4, reviews: 29, weights: ["250 ml", "500 ml", "1 litre"],
     sku: "KO-FERT-003", inStock: true, deliveryDays: "2–4",
@@ -312,7 +312,7 @@ export const products: Product[] = [
     badge: "Sale",
     category: "fertilizers",
     images: [
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/86/b1/48/86b14800e16d4829c6b2b349f69f1c3e.jpg",
     ],
     rating: 4, reviews: 67, weights: ["1 kg", "2 kg", "5 kg"],
     sku: "KO-FERT-004", inStock: true, deliveryDays: "2–4",
@@ -334,7 +334,7 @@ export const products: Product[] = [
     badge: "Best Seller",
     category: "grow-bags",
     images: [
-      "https://images.unsplash.com/photo-1599685315640-89c0f88c3b4e?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/a4/61/56/a461565688e8b1221d11d73979b3d0ce.jpg",
     ],
     rating: 5, reviews: 189, weights: ["5 litre (set of 3)", "15 litre (set of 3)", "25 litre (set of 3)"],
     sku: "KO-GROW-001", inStock: true, deliveryDays: "2–4",
@@ -354,7 +354,7 @@ export const products: Product[] = [
     badge: "Popular",
     category: "grow-bags",
     images: [
-      "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/51/5f/c5/515fc53eafa9926968371714013a012a.jpg",
     ],
     rating: 4, reviews: 74, weights: ["40 litre (1 bag)", "40 litre (set of 2)"],
     sku: "KO-GROW-002", inStock: true, deliveryDays: "2–4",
@@ -374,7 +374,7 @@ export const products: Product[] = [
     badge: "New",
     category: "grow-bags",
     images: [
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/736x/72/90/2f/72902f4246351e4c77adbe858d3ab985.jpg",
     ],
     rating: 4, reviews: 22, weights: ["Set of 5 (mixed sizes)"],
     sku: "KO-GROW-003", inStock: true, deliveryDays: "2–4",
@@ -396,7 +396,7 @@ export const products: Product[] = [
     badge: "Best Seller",
     category: "coco-peats",
     images: [
-      "https://images.unsplash.com/photo-1614594975525-e45190c55d0c?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/736x/fa/01/f6/fa01f6c32e72a41ab8d2a33b01f7f3d5.jpg",
     ],
     rating: 5, reviews: 312, weights: ["650g block (8L)", "1.5kg block (16L)"],
     sku: "KO-COCO-001", inStock: true, deliveryDays: "2–4",
@@ -416,7 +416,7 @@ export const products: Product[] = [
     badge: "Popular",
     category: "coco-peats",
     images: [
-      "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/f8/ab/07/f8ab077b2b7f66ae9eaa25c13949f33a.jpg",
     ],
     rating: 4, reviews: 98, weights: ["2 kg", "5 kg", "10 kg"],
     sku: "KO-COCO-002", inStock: true, deliveryDays: "2–4",
@@ -438,7 +438,7 @@ export const products: Product[] = [
     badge: "Popular",
     category: "tools",
     images: [
-      "https://images.unsplash.com/photo-1615486366482-4b7a30d1f9b3?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/02/80/9f/02809f23f5f5be3c2785ba9053646e6b.jpg",
     ],
     rating: 4, reviews: 85, weights: ["1 litre", "2 litre"],
     sku: "KO-TOOL-001", inStock: true, deliveryDays: "2–4",
@@ -458,7 +458,7 @@ export const products: Product[] = [
     badge: "New",
     category: "tools",
     images: [
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/1200x/2b/30/b0/2b30b0f697a33bedc92bdef6032acc5f.jpg",
     ],
     rating: 5, reviews: 47, weights: ["Trowel + Fork set"],
     sku: "KO-TOOL-002", inStock: true, deliveryDays: "2–4",
@@ -478,7 +478,7 @@ export const products: Product[] = [
     badge: "Best Seller",
     category: "tools",
     images: [
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&auto=format&fit=crop&q=80",
+      "https://i.pinimg.com/736x/27/79/d5/2779d56409a05da505c5a3e828ed4368.jpg",
     ],
     rating: 5, reviews: 134, weights: ["Standard kit"],
     sku: "KO-TOOL-003", inStock: true, deliveryDays: "2–4",

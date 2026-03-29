@@ -85,7 +85,7 @@ export const Header = () => {
             <span className="hidden sm:inline text-sm font-bold">Cart</span>
             {totalItems > 0 && (
               <span
-                className={`absolute -top-1.5 -right-1.5 bg-[#e86c2c] text-white text-xs min-w-[20px] h-5 flex items-center justify-center rounded-full font-bold leading-none px-1 transition-transform ${
+                className={`absolute -top-1.5 -right-1.5 bg-[#e86c2c] text-white text-xs min-w-5 w-5 h-5 flex items-center justify-center rounded-full font-bold leading-none px-1 transition-transform ${
                   bump ? "scale-125" : "scale-100"
                 }`}
                 style={{ transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1)" }}
