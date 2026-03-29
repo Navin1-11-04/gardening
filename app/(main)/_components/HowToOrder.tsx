@@ -11,12 +11,8 @@ const steps = [
   { number: "4", title: "We Deliver to You", description: "Fresh garden supplies at your doorstep in 2–4 days.", icon: "🚚" },
 ];
 
-// FIX: graceful video fallback — shows a placeholder CTA if the video file
-// doesn't exist yet, instead of a broken video element.
 const VIDEO_SRC = "/videos/how-to-order.mp4";
 const THUMBNAIL_SRC = "/images/how-to-order-thumbnail.jpg";
-
-// Set this to true once you've added the actual video file to /public/videos/
 const VIDEO_AVAILABLE = false;
 
 export const HowToOrder = () => {
@@ -33,7 +29,7 @@ export const HowToOrder = () => {
     <section className="w-full bg-white">
 
       {/* Steps */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-10 sm:pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-8 sm:pb-10">
         <div className="mb-7 sm:mb-10">
           <p className="text-sm tracking-[0.2em] uppercase text-[#7a9e5f] font-semibold mb-2">How it works</p>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#2a2a1e] font-outfit">How to Order</h2>
@@ -68,8 +64,8 @@ export const HowToOrder = () => {
         </div>
       </div>
 
-      {/* Video section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-10 sm:pb-16">
+      {/* Video / fallback section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-12 sm:pb-16">
         {VIDEO_AVAILABLE ? (
           <>
             <p className="text-base sm:text-lg text-[#5a5a48] mb-4 font-medium">
@@ -110,11 +106,10 @@ export const HowToOrder = () => {
             </div>
           </>
         ) : (
-          /* Fallback: No video yet — show a shop CTA instead */
-          <div className="bg-[#faf7f2] border-2 border-dashed border-[#d4c9a8] rounded-2xl p-8 sm:p-10 text-center">
+          <div className="bg-[#faf7f2] border-2 border-dashed border-[#d4c9a8] rounded-2xl px-8 py-10 sm:py-12 text-center">
             <p className="text-4xl mb-4">🎬</p>
             <p className="text-xl font-bold text-[#2a2a1e] mb-2">Video Guide Coming Soon</p>
-            <p className="text-base text-[#5a5a48] mb-6 max-w-md mx-auto leading-relaxed">
+            <p className="text-base text-[#5a5a48] mb-8 max-w-md mx-auto leading-relaxed">
               We're putting together a step-by-step video to make ordering even easier. In the meantime, our team is always happy to help over the phone.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
