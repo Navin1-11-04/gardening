@@ -20,6 +20,7 @@ import {
   Building2,
 } from "lucide-react";
 import { useCart } from "../_context/CartContext";
+import { saveOrder, generateOrderId } from "@/lib/orderStorage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -326,7 +327,7 @@ const PaymentStep = ({
             {selected === "cod" && method.id === "cod" && (
               <div className="mt-2 bg-[#fff8ee] border border-[#f0d080] rounded-2xl p-4">
                 <p className="text-base text-[#7a5c1e] leading-relaxed">
-                  💰 Please keep <strong>₹{total.toLocaleString("en-IN")}</strong> ready in cash when your order arrives. Our delivery partner will collect it at your doorstep.
+                  💰 Please keep <strong>₹{total.toLocaleString("en-IN")}</strong> ready in cash when your order arrives.
                 </p>
               </div>
             )}
@@ -370,7 +371,6 @@ const ReviewStep = ({
         <p className="text-base text-[#7a7a68] mt-1">Please check everything before placing your order.</p>
       </div>
 
-      {/* Delivery address card */}
       <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -391,7 +391,6 @@ const ReviewStep = ({
         </div>
       </div>
 
-      {/* Payment card */}
       <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -413,7 +412,6 @@ const ReviewStep = ({
         </div>
       </div>
 
-      {/* Real cart items from context */}
       <div className="bg-white border border-[#e8e0d0] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[#e8e0d0]">
           <span className="text-base font-bold text-[#2a2a1e]">Order Items ({items.length})</span>
@@ -490,7 +488,6 @@ const OrderSummary = ({
           Edit cart
         </Link>
       </div>
-
       <div className="flex flex-col divide-y divide-[#f0ece4]">
         {items.map((item) => (
           <div key={`${item.id}-${item.variant}`} className="flex items-center gap-3 px-5 py-3.5">
@@ -507,7 +504,6 @@ const OrderSummary = ({
           </div>
         ))}
       </div>
-
       <div className="px-5 py-4 bg-[#faf7f2] border-t border-[#e8e0d0] flex flex-col gap-2.5">
         <div className="flex justify-between text-sm text-[#5a5a48]">
           <span>Subtotal</span>
@@ -556,11 +552,45 @@ export default function CheckoutPage() {
   const total       = subtotal + deliveryFee;
 
   const handlePlaceOrder = () => {
+    // Save the order to localStorage before clearing the cart
+    const addr = savedAddresses[selectedAddress === "new" ? 0 : selectedAddress];
+    const pm   = paymentMethods.find((p) => p.id === selectedPayment);
+
+    const orderId = generateOrderId();
+
+    saveOrder({
+      id: orderId,
+      date: new Date().toISOString(),
+      status: "confirmed",
+      paymentMethod: pm?.label ?? "Cash on Delivery",
+      address: {
+        name:    addr.fullName,
+        phone:   addr.phone,
+        line1:   addr.addressLine1,
+        line2:   addr.addressLine2,
+        city:    addr.city,
+        state:   addr.state,
+        pincode: addr.pincode,
+      },
+      items: items.map((i) => ({
+        id:       i.id,
+        name:     i.name,
+        variant:  i.variant,
+        price:    i.price,
+        quantity: i.quantity,
+        image:    i.image,
+      })),
+      subtotal,
+      deliveryFee,
+      couponDiscount: 0,
+      total,
+    });
+
     clearCart();
-    router.push("/order-confirmation");
+    // Pass orderId in URL so confirmation page can read it
+    router.push(`/order-confirmation?id=${orderId}`);
   };
 
-  // Empty cart guard
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-[#faf7f2] flex flex-col items-center justify-center px-4 text-center py-20">
@@ -576,8 +606,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-[#faf7f2]">
-
-      {/* Breadcrumb */}
       <div className="bg-white border-b border-[#e8e0d0]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-2 text-sm flex-wrap">
           <Link href="/" className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors">Home</Link>
@@ -590,7 +618,6 @@ export default function CheckoutPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <StepBar current={step} />
-
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <div className="flex-1 min-w-0">
             {step === "address" && (
@@ -620,7 +647,6 @@ export default function CheckoutPage() {
               />
             )}
           </div>
-
           <OrderSummary
             items={items}
             subtotal={subtotal}

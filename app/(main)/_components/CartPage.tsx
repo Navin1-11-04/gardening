@@ -129,15 +129,21 @@ const CartItemRow = ({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem } = useCart();
+  const { items, updateQuantity, removeItem, addItem } = useCart();
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{
     code: string;
     discount: number;
   } | null>(null);
   const [couponError, setCouponError] = useState("");
+
+  // ── Undo state ──────────────────────────────────────────────────────────
+  // removedItem  → drives the toast visibility
+  // undoBuffer   → holds the item so we can restore it on undo
+  // undoTimer    → reference so we can cancel it if user hits Undo in time
   const [removedItem, setRemovedItem] = useState<CartItem | null>(null);
   const [undoBuffer, setUndoBuffer] = useState<CartItem | null>(null);
+  const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const savings = items.reduce(
@@ -151,17 +157,66 @@ export default function CartPage() {
   const total = subtotal - couponDiscount + deliveryFee;
   const amountToFreeDelivery = FREE_DELIVERY_THRESHOLD - subtotal;
 
+  // ── Remove with undo ─────────────────────────────────────────────────────
   const handleRemove = (id: number) => {
     const item = items.find((i) => i.id === id);
-    if (item) {
-      setUndoBuffer(item);
-      setRemovedItem(item);
-      removeItem(id);
-      setTimeout(() => {
-        setRemovedItem(null);
-        setUndoBuffer(null);
-      }, 4000);
+    if (!item) return;
+
+    // Cancel any existing undo timer (previous removal)
+    if (undoTimer) clearTimeout(undoTimer);
+
+    // Remove from cart
+    removeItem(id);
+
+    // Store in undo buffer and show toast
+    setUndoBuffer(item);
+    setRemovedItem(item);
+
+    // Auto-dismiss after 4 seconds — clears both toast and buffer
+    const timer = setTimeout(() => {
+      setRemovedItem(null);
+      setUndoBuffer(null);
+      setUndoTimer(null);
+    }, 4000);
+    setUndoTimer(timer);
+  };
+
+  // ── Undo handler — restores the item back into the cart ─────────────────
+  const handleUndo = () => {
+    if (!undoBuffer) return;
+
+    // Cancel the auto-dismiss timer
+    if (undoTimer) {
+      clearTimeout(undoTimer);
+      setUndoTimer(null);
     }
+
+    // Re-add the item with its original quantity
+    addItem({
+      id: undoBuffer.id,
+      name: undoBuffer.name,
+      subtitle: undoBuffer.subtitle,
+      variant: undoBuffer.variant,
+      price: undoBuffer.price,
+      originalPrice: undoBuffer.originalPrice,
+      image: undoBuffer.image,
+      badge: undoBuffer.badge,
+      quantity: undoBuffer.quantity,
+    });
+
+    // Clear toast and buffer
+    setRemovedItem(null);
+    setUndoBuffer(null);
+  };
+
+  // ── Dismiss toast without undoing ────────────────────────────────────────
+  const handleDismissToast = () => {
+    if (undoTimer) {
+      clearTimeout(undoTimer);
+      setUndoTimer(null);
+    }
+    setRemovedItem(null);
+    setUndoBuffer(null);
   };
 
   const handleApplyCoupon = () => {
@@ -185,7 +240,7 @@ export default function CartPage() {
     setCouponError("");
   };
 
-  if (items.length === 0) {
+  if (items.length === 0 && !removedItem) {
     return (
       <div className="min-h-screen bg-[#faf7f2] flex flex-col items-center justify-center px-4 text-center py-20">
         <div className="text-7xl mb-6">🛒</div>
@@ -263,7 +318,7 @@ export default function CartPage() {
           </div>
         )}
 
-        <div className="flex flex-col  gap-6">
+        <div className="flex flex-col gap-6">
           {/* Main Row: Left (Products) + Right (Order Summary) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* LEFT: Cart Items */}
@@ -499,20 +554,26 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* Undo toast */}
+      {/* ── Undo Toast ────────────────────────────────────────────────────────── */}
       {removedItem && (
         <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#2a2a1e] text-white rounded-2xl px-5 py-3.5 flex items-center gap-4 shadow-2xl max-w-sm w-[calc(100%-2rem)]">
           <p className="flex-1 text-sm font-medium leading-snug">
             "{removedItem.name}" removed
           </p>
+          {/* FIXED: Undo now actually re-adds the item */}
           <button
-            onClick={() => {
-              setRemovedItem(null);
-              setUndoBuffer(null);
-            }}
+            onClick={handleUndo}
             className="shrink-0 bg-[#3d6b35] hover:bg-[#4a8040] text-white text-sm font-bold px-3 py-1.5 rounded-xl transition-colors"
           >
             Undo
+          </button>
+          {/* Optional: X to dismiss without undoing */}
+          <button
+            onClick={handleDismissToast}
+            className="shrink-0 text-white/60 hover:text-white transition-colors"
+            aria-label="Dismiss"
+          >
+            <X size={16} />
           </button>
         </div>
       )}

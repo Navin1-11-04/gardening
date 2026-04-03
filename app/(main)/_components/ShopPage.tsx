@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   ShoppingCart,
   SlidersHorizontal,
@@ -12,6 +12,7 @@ import {
   ChevronUp,
   Star,
   Loader2,
+  Search,
 } from "lucide-react";
 import { useCart } from "../_context/CartContext";
 import { Product } from "@/data/Product";
@@ -58,6 +59,26 @@ const heroBg: Record<string, string> = {
     "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=1440&auto=format&fit=crop",
 };
 
+// ─── Highlight matching text ──────────────────────────────────────────────────
+
+const Highlight = ({ text, query }: { text: string; query: string }) => {
+  if (!query) return <>{text}</>;
+  const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase() ? (
+          <mark key={i} className="bg-[#fff3b0] text-[#2a2a1e] rounded px-0.5">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+};
+
 // ─── Star Rating ─────────────────────────────────────────────────────────────
 
 const StarRating = ({
@@ -85,7 +106,13 @@ const StarRating = ({
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
 
-const ProductCard = ({ product }: { product: Product }) => {
+const ProductCard = ({
+  product,
+  searchQuery,
+}: {
+  product: Product;
+  searchQuery: string;
+}) => {
   const { addItem, isInCart } = useCart();
   const [justAdded, setJustAdded] = useState(false);
   const inCart = isInCart(product.id);
@@ -135,10 +162,10 @@ const ProductCard = ({ product }: { product: Product }) => {
       <div className="p-3 sm:p-4 flex flex-col flex-1 gap-2">
         <div>
           <h3 className="text-sm sm:text-base font-bold text-[#2a2a1e] leading-snug">
-            {product.name}
+            <Highlight text={product.name} query={searchQuery} />
           </h3>
           <p className="text-xs sm:text-sm text-[#7a7a68] mt-0.5">
-            {product.subtitle}
+            <Highlight text={product.subtitle} query={searchQuery} />
           </p>
         </div>
         <StarRating rating={product.rating} reviews={product.reviews} />
@@ -321,6 +348,7 @@ const FilterSidebar = ({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ShopPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -331,12 +359,19 @@ export default function ShopPage() {
   const [onlyOrganic, setOnlyOrganic] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Read ?cat= from URL
+  // Read ?cat= and ?q= from URL
   const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("q")?.trim() ?? "";
+  const catParam = searchParams.get("cat");
+
   useEffect(() => {
-    const cat = searchParams.get("cat");
-    if (cat) setActiveCategory(cat);
-  }, [searchParams]);
+    if (catParam) setActiveCategory(catParam);
+  }, [catParam]);
+
+  // When a search query is present, reset category to "all"
+  useEffect(() => {
+    if (searchQuery) setActiveCategory("all");
+  }, [searchQuery]);
 
   // Fetch all products once on mount
   useEffect(() => {
@@ -369,16 +404,40 @@ export default function ShopPage() {
     setOnlyOrganic(false);
   };
 
+  const clearSearch = () => {
+    router.push("/shop");
+  };
+
   const filtered = useMemo(() => {
     let result = products.filter((p) => {
-      if (activeCategory !== "all" && p.category !== activeCategory)
+      // Search query — checks name, subtitle, description
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const matches =
+          p.name.toLowerCase().includes(q) ||
+          p.subtitle.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+
+      // Category filter (ignored when searching)
+      if (!searchQuery && activeCategory !== "all" && p.category !== activeCategory)
         return false;
+
+      // Price filter
       if (p.price < priceRange[0] || p.price > priceRange[1]) return false;
+
+      // On sale
       if (onlyOnSale && !p.originalPrice) return false;
+
+      // Organic
       if (onlyOrganic && p.badge !== "Organic" && p.category !== "fertilizers")
         return false;
+
       return true;
     });
+
     if (sort === "price-asc")
       result = [...result].sort((a, b) => a.price - b.price);
     if (sort === "price-desc")
@@ -387,14 +446,17 @@ export default function ShopPage() {
       result = [...result]
         .filter((p) => p.badge === "New")
         .concat(result.filter((p) => p.badge !== "New"));
-    return result;
-  }, [products, activeCategory, sort, priceRange, onlyOnSale, onlyOrganic]);
 
-  const heroLabel =
-    categories.find((c) => c.id === activeCategory)?.label ?? "All Products";
+    return result;
+  }, [products, activeCategory, sort, priceRange, onlyOnSale, onlyOrganic, searchQuery]);
+
+  const heroLabel = searchQuery
+    ? `Search: "${searchQuery}"`
+    : (categories.find((c) => c.id === activeCategory)?.label ?? "All Products");
 
   return (
     <div className="min-h-screen bg-[#faf7f2] font-sans">
+
       {/* Hero Banner */}
       <div
         className="relative w-full overflow-hidden"
@@ -415,43 +477,74 @@ export default function ShopPage() {
         <div className="absolute inset-0 flex flex-col justify-end pb-8 sm:pb-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
             <p className="text-white/70 text-sm font-medium mb-1">
-              Shop / <span className="text-white">{heroLabel}</span>
+              {searchQuery ? (
+                <>Shop / <span className="text-white">Search results</span></>
+              ) : (
+                <>Shop / <span className="text-white">{heroLabel}</span></>
+              )}
             </p>
             <h1
               className="text-white font-black font-outfit leading-none"
               style={{ fontSize: "clamp(1.8rem, 5vw, 3.5rem)" }}
             >
-              {heroLabel}
+              {searchQuery ? (
+                <span className="flex items-center gap-3 flex-wrap">
+                  <Search size={32} className="opacity-80" />
+                  {heroLabel}
+                </span>
+              ) : heroLabel}
             </h1>
             <p className="text-white/75 text-base sm:text-lg mt-2 font-medium">
               {loading
                 ? "Loading products…"
-                : `${filtered.length} product${filtered.length !== 1 ? "s" : ""} available`}
+                : `${filtered.length} product${filtered.length !== 1 ? "s" : ""} ${searchQuery ? "found" : "available"}`}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Category Tabs */}
-      <div className="bg-white border-b-2 border-[#e8e0d0] sticky top-0 z-30 w-full">
-        <div className="px-4 sm:px-6">
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-1">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`shrink-0 px-4 sm:px-5 py-3 text-sm sm:text-base font-semibold rounded-xl transition-all whitespace-nowrap ${
-                  activeCategory === cat.id
-                    ? "bg-[#3d6b35] text-white shadow-sm"
-                    : "text-[#5a5a48] hover:bg-[#eef5ea] hover:text-[#3d6b35]"
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+      {/* Search results banner (shown instead of category tabs when searching) */}
+      {searchQuery ? (
+        <div className="bg-white border-b-2 border-[#e8e0d0] sticky top-0 z-30 w-full">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm text-[#5a5a48]">
+              <Search size={16} className="text-[#3d6b35]" />
+              <span>
+                Showing results for{" "}
+                <span className="font-bold text-[#2a2a1e]">"{searchQuery}"</span>
+              </span>
+            </div>
+            <button
+              onClick={clearSearch}
+              className="flex items-center gap-1.5 text-sm font-semibold text-[#c0392b] hover:text-[#a0311e] bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-colors ml-auto"
+            >
+              <X size={14} />
+              Clear search
+            </button>
           </div>
         </div>
-      </div>
+      ) : (
+        /* Category Tabs */
+        <div className="bg-white border-b-2 border-[#e8e0d0] sticky top-0 z-30 w-full">
+          <div className="px-4 sm:px-6">
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-1">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`shrink-0 px-4 sm:px-5 py-3 text-sm sm:text-base font-semibold rounded-xl transition-all whitespace-nowrap ${
+                    activeCategory === cat.id
+                      ? "bg-[#3d6b35] text-white shadow-sm"
+                      : "text-[#5a5a48] hover:bg-[#eef5ea] hover:text-[#3d6b35]"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
@@ -486,7 +579,7 @@ export default function ShopPage() {
                 <span className="font-bold text-[#2a2a1e]">
                   {filtered.length}
                 </span>{" "}
-                products
+                product{filtered.length !== 1 ? "s" : ""}
               </>
             )}
           </p>
@@ -539,24 +632,42 @@ export default function ShopPage() {
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <span className="text-5xl mb-4">🌱</span>
+                <span className="text-5xl mb-4">{searchQuery ? "🔍" : "🌱"}</span>
                 <h3 className="text-xl font-bold text-[#2a2a1e] mb-2">
-                  No products found
+                  {searchQuery
+                    ? `No results for "${searchQuery}"`
+                    : "No products found"}
                 </h3>
-                <p className="text-[#7a7a68] mb-5">
-                  Try adjusting your filters or browse a different category.
+                <p className="text-[#7a7a68] mb-5 max-w-xs">
+                  {searchQuery
+                    ? "Try a different word, or browse all products."
+                    : "Try adjusting your filters or browse a different category."}
                 </p>
-                <button
-                  onClick={clearFilters}
-                  className="bg-[#3d6b35] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#335c2c] transition-colors"
-                >
-                  Clear Filters
-                </button>
+                <div className="flex gap-3 flex-wrap justify-center">
+                  {searchQuery && (
+                    <button
+                      onClick={clearSearch}
+                      className="bg-[#3d6b35] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#335c2c] transition-colors"
+                    >
+                      Browse All Products
+                    </button>
+                  )}
+                  <button
+                    onClick={clearFilters}
+                    className="bg-white border-2 border-[#d4c9a8] text-[#5a5a48] font-bold px-6 py-3 rounded-xl hover:border-[#3d6b35] hover:text-[#3d6b35] transition-colors"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
                 {filtered.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    searchQuery={searchQuery}
+                  />
                 ))}
               </div>
             )}
