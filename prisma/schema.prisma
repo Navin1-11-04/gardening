@@ -1,0 +1,216 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─── Admin User (for admin panel access) ───────────────────────────────────
+model Admin {
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  password  String  // bcrypt hashed
+  name      String
+  role      String  @default("admin") // admin, manager, employee
+  active    Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Customer User ─────────────────────────────────────────────────────────
+model User {
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  password  String? // bcrypt hashed (optional for social login)
+  name      String
+  phone     String?
+  avatar    String?
+  active    Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  orders    Order[]
+  addresses Address[]
+  reviews   Review[]
+}
+
+// ─── Category ──────────────────────────────────────────────────────────────
+model Category {
+  id        Int     @id @default(autoincrement())
+  name      String  @unique
+  nameTa    String? // Tamil name
+  slug      String  @unique
+  icon      String?
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products  Product[]
+}
+
+// ─── Product ───────────────────────────────────────────────────────────────
+model Product {
+  id            Int     @id @default(autoincrement())
+  name          String
+  nameTa        String? // Tamil name
+  subtitle      String?
+  subtitleTa    String? // Tamil subtitle
+  slug          String  @unique
+  description   String
+  descriptionTa String? // Tamil description
+  
+  price         Float
+  originalPrice Float?
+  
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId    Int
+  
+  // Stock & SKU
+  sku           String  @unique
+  stock         Int     @default(0)
+  lowStockLimit Int     @default(5)
+  
+  // Badge (Best Seller, New, Sale, Organic, Popular)
+  badge         String?
+  
+  // Media
+  images        String  // JSON array of image URLs
+  highlights    String  // JSON array of highlights
+  howToUse      String  // JSON array of steps
+  
+  // Specifications
+  weights       String? // JSON array of weight options
+  
+  // Ratings
+  rating        Float   @default(0)
+  reviews       Int     @default(0)
+  
+  // Status
+  active        Boolean @default(true)
+  inStock       Boolean @default(true)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  orderItems    OrderItem[]
+  productReviews Review[]
+}
+
+// ─── Address ───────────────────────────────────────────────────────────────
+model Address {
+  id        Int     @id @default(autoincrement())
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  
+  fullName  String
+  phone     String
+  pincode   String
+  addressLine1 String
+  addressLine2 String?
+  city      String
+  state     String
+  type      String  @default("Home") // Home, Work, Other
+  
+  isDefault Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Order ─────────────────────────────────────────────────────────────────
+model Order {
+  id            Int     @id @default(autoincrement())
+  orderNumber   String  @unique // e.g., KO-2024-001001
+  
+  user          User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId        Int?
+  
+  // Customer info (saved at time of order)
+  customerName  String
+  customerEmail String
+  customerPhone String
+  
+  // Shipping address
+  shippingAddress String // JSON serialized
+  
+  // Order items
+  items         OrderItem[]
+  
+  // Pricing
+  subtotal      Float
+  deliveryFee   Float   @default(0)
+  discount      Float   @default(0)
+  tax           Float   @default(0)
+  total         Float
+  
+  // Status: pending, processing, shipped, delivered, cancelled, refunded
+  status        String  @default("pending")
+  
+  // Payment
+  paymentMethod String? // card, upi, netbanking, cod (Cash on Delivery)
+  paymentStatus String  @default("pending") // pending, paid, failed
+  paymentId     String? // Razorpay payment ID
+  
+  // Shipping
+  trackingNumber String?
+  shippedAt     DateTime?
+  deliveredAt   DateTime?
+  
+  // Notes
+  notes         String?
+  adminNotes    String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ─── OrderItem ─────────────────────────────────────────────────────────────
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   Int
+  
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId Int
+  
+  // Product snapshot (in case product is deleted)
+  productName String
+  productImage String
+  
+  // Item details
+  quantity  Int
+  price     Float   // Price at time of purchase
+  variant   String? // Weight option selected
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Review ────────────────────────────────────────────────────────────────
+model Review {
+  id        Int     @id @default(autoincrement())
+  
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId Int
+  
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  
+  rating    Int     // 1-5
+  title     String?
+  comment   String?
+  
+  verified  Boolean @default(false) // Admin verification
+  approved  Boolean @default(true)  // Moderation status
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([productId, userId]) // One review per user per product
+}
