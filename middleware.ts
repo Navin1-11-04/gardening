@@ -1,26 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTokenFromCookie, verifyToken } from "@/lib/adminAuth";
+import { verifyToken } from "@/lib/adminAuth";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow login page
-  if (pathname === "/admin/login" || pathname === "/api/admin/login") {
+  // Only protect /admin routes — skip login page itself
+  if (!pathname.startsWith("/admin") || pathname === "/admin/login") {
     return NextResponse.next();
   }
 
-  // Protect admin routes
-  if (pathname.startsWith("/admin")) {
-    const cookieHeader = request.headers.get("cookie");
-    const token = getTokenFromCookie(cookieHeader || "");
+  const token = request.cookies.get("admin_token")?.value;
 
-    if (!token || !verifyToken(token)) {
-      // Redirect to login if not authenticated
-      if (pathname === "/admin") {
-        return NextResponse.redirect(new URL("/admin/login", request.url));
-      }
-      return NextResponse.redirect(new URL("/admin/login", request.url));
-    }
+  if (!token) {
+    // Redirect unauthenticated users to login
+    const loginUrl = new URL("/admin/login", request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  const decoded = verifyToken(token);
+  if (!decoded) {
+    // Token invalid or expired
+    const loginUrl = new URL("/admin/login", request.url);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete("admin_token");
+    return response;
   }
 
   return NextResponse.next();
