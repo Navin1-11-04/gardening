@@ -135,20 +135,21 @@ const Field = ({
 // ─── Address Step ─────────────────────────────────────────────────────────────
 
 const AddressStep = ({
-  onNext, selected, setSelected,
+  onNext, selected, setSelected, newAddressForm, setNewAddressForm,
 }: {
   onNext: () => void;
   selected: number | "new";
   setSelected: (v: number | "new") => void;
+  newAddressForm: Address;
+  setNewAddressForm: (v: Address) => void;
 }) => {
-  const [form, setForm] = useState<Address>({
-    fullName: "", phone: "", pincode: "", addressLine1: "",
-    addressLine2: "", city: "", state: "", type: "Home",
-  });
-  const set = (k: keyof Address) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: keyof Address) => (v: string) =>
+    setNewAddressForm({ ...newAddressForm, [k]: v });
+
   const isFormValid =
     selected !== "new" ||
-    (form.fullName && form.phone && form.pincode && form.addressLine1 && form.city && form.state);
+    (newAddressForm.fullName && newAddressForm.phone && newAddressForm.pincode &&
+     newAddressForm.addressLine1 && newAddressForm.city && newAddressForm.state);
 
   return (
     <div className="flex flex-col gap-6">
@@ -205,23 +206,23 @@ const AddressStep = ({
       {selected === "new" && (
         <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5 sm:p-6 flex flex-col gap-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field label="Full Name"     value={form.fullName}     onChange={set("fullName")}     placeholder="e.g. Meenakshi Rajan"  required />
-            <Field label="Phone Number"  value={form.phone}        onChange={set("phone")}         placeholder="e.g. 98765 43210"      type="tel" required />
+            <Field label="Full Name"     value={newAddressForm.fullName}     onChange={set("fullName")}     placeholder="e.g. Meenakshi Rajan"  required />
+            <Field label="Phone Number"  value={newAddressForm.phone}        onChange={set("phone")}        placeholder="e.g. 98765 43210"      type="tel" required />
           </div>
-          <Field label="Address Line 1" value={form.addressLine1} onChange={set("addressLine1")} placeholder="House no., Street, Area" required />
-          <Field label="Address Line 2" value={form.addressLine2} onChange={set("addressLine2")} placeholder="Landmark (optional)" />
+          <Field label="Address Line 1" value={newAddressForm.addressLine1} onChange={set("addressLine1")} placeholder="House no., Street, Area" required />
+          <Field label="Address Line 2" value={newAddressForm.addressLine2} onChange={set("addressLine2")} placeholder="Landmark (optional)" />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <Field label="Pincode"   value={form.pincode} onChange={set("pincode")} placeholder="6-digit pincode" required />
-            <Field label="City / Town" value={form.city}  onChange={set("city")}   placeholder="e.g. Namakkal"   required />
-            <Field label="State"     value={form.state}   onChange={set("state")}  placeholder="e.g. Tamil Nadu" required />
+            <Field label="Pincode"     value={newAddressForm.pincode} onChange={set("pincode")} placeholder="6-digit pincode" required />
+            <Field label="City / Town" value={newAddressForm.city}    onChange={set("city")}    placeholder="e.g. Namakkal"   required />
+            <Field label="State"       value={newAddressForm.state}   onChange={set("state")}   placeholder="e.g. Tamil Nadu" required />
           </div>
           <div>
             <label className="text-base font-bold text-[#2a2a1e] block mb-2">Address Type</label>
             <div className="flex gap-3 flex-wrap">
               {(["Home", "Work", "Other"] as const).map((t) => (
-                <button key={t} onClick={() => setForm((f) => ({ ...f, type: t }))}
+                <button key={t} onClick={() => setNewAddressForm({ ...newAddressForm, type: t })}
                   className={`px-5 py-2.5 rounded-xl text-base font-bold border-2 transition-all ${
-                    form.type === t ? "bg-[#3d6b35] text-white border-[#3d6b35]" : "bg-white text-[#5a5a48] border-[#d4c9a8] hover:border-[#3d6b35]"
+                    newAddressForm.type === t ? "bg-[#3d6b35] text-white border-[#3d6b35]" : "bg-white text-[#5a5a48] border-[#d4c9a8] hover:border-[#3d6b35]"
                   }`}
                 >
                   {t === "Home" ? "🏠" : t === "Work" ? "💼" : "📍"} {t}
@@ -354,14 +355,14 @@ const PaymentStep = ({
 // ─── Review Step ──────────────────────────────────────────────────────────────
 
 const ReviewStep = ({
-  onPlace, onBack, paymentMethod, subtotal, deliveryFee, total,
+  onPlace, onBack, paymentMethod, subtotal, deliveryFee, total, address,
 }: {
   onPlace: () => void; onBack: () => void; paymentMethod: string;
   subtotal: number; deliveryFee: number; total: number;
+  address: Address;
 }) => {
   const { items } = useCart();
-  const pm   = paymentMethods.find((p) => p.id === paymentMethod);
-  const addr = savedAddresses[0];
+  const pm = paymentMethods.find((p) => p.id === paymentMethod);
 
   return (
     <div className="flex flex-col gap-6">
@@ -381,9 +382,10 @@ const ReviewStep = ({
             <Pencil size={13} /> Change
           </button>
         </div>
-        <p className="text-base font-bold text-[#2a2a1e]">{addr.fullName} · 📞 {addr.phone}</p>
+        <p className="text-base font-bold text-[#2a2a1e]">{address.fullName} · 📞 {address.phone}</p>
         <p className="text-sm text-[#5a5a48] mt-1 leading-snug">
-          {addr.addressLine1}, {addr.addressLine2 && addr.addressLine2 + ", "}{addr.city}, {addr.state} — {addr.pincode}
+          {address.addressLine1}
+          {address.addressLine2 ? `, ${address.addressLine2}` : ""}, {address.city}, {address.state} — {address.pincode}
         </p>
         <div className="flex items-center gap-2 mt-3 text-sm text-[#3d6b35] bg-[#eef5ea] px-3 py-2 rounded-xl w-fit font-semibold">
           <Truck size={15} />
@@ -540,22 +542,29 @@ const OrderSummary = ({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+const EMPTY_ADDRESS: Address = {
+  fullName: "", phone: "", pincode: "", addressLine1: "",
+  addressLine2: "", city: "", state: "", type: "Home",
+};
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
 
   const [step,            setStep]            = useState<Step>("address");
   const [selectedAddress, setSelectedAddress] = useState<number | "new">(0);
+  const [newAddressForm,  setNewAddressForm]  = useState<Address>(EMPTY_ADDRESS);
   const [selectedPayment, setSelectedPayment] = useState("cod");
 
   const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
   const total       = subtotal + deliveryFee;
 
-  const handlePlaceOrder = () => {
-    // Save the order to localStorage before clearing the cart
-    const addr = savedAddresses[selectedAddress === "new" ? 0 : selectedAddress];
-    const pm   = paymentMethods.find((p) => p.id === selectedPayment);
+  // Resolve which address to use when placing order
+  const resolvedAddress: Address =
+    selectedAddress === "new" ? newAddressForm : savedAddresses[selectedAddress];
 
+  const handlePlaceOrder = () => {
+    const pm = paymentMethods.find((p) => p.id === selectedPayment);
     const orderId = generateOrderId();
 
     saveOrder({
@@ -564,13 +573,13 @@ export default function CheckoutPage() {
       status: "confirmed",
       paymentMethod: pm?.label ?? "Cash on Delivery",
       address: {
-        name:    addr.fullName,
-        phone:   addr.phone,
-        line1:   addr.addressLine1,
-        line2:   addr.addressLine2,
-        city:    addr.city,
-        state:   addr.state,
-        pincode: addr.pincode,
+        name:    resolvedAddress.fullName,
+        phone:   resolvedAddress.phone,
+        line1:   resolvedAddress.addressLine1,
+        line2:   resolvedAddress.addressLine2 || undefined,
+        city:    resolvedAddress.city,
+        state:   resolvedAddress.state,
+        pincode: resolvedAddress.pincode,
       },
       items: items.map((i) => ({
         id:       i.id,
@@ -587,7 +596,6 @@ export default function CheckoutPage() {
     });
 
     clearCart();
-    // Pass orderId in URL so confirmation page can read it
     router.push(`/order-confirmation?id=${orderId}`);
   };
 
@@ -625,6 +633,8 @@ export default function CheckoutPage() {
                 onNext={() => setStep("payment")}
                 selected={selectedAddress}
                 setSelected={setSelectedAddress}
+                newAddressForm={newAddressForm}
+                setNewAddressForm={setNewAddressForm}
               />
             )}
             {step === "payment" && (
@@ -644,6 +654,7 @@ export default function CheckoutPage() {
                 subtotal={subtotal}
                 deliveryFee={deliveryFee}
                 total={total}
+                address={resolvedAddress}
               />
             )}
           </div>

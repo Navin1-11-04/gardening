@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -14,58 +15,19 @@ import {
   Check,
   MessageSquare,
 } from "lucide-react";
+import { getOrders, StoredOrder } from "@/lib/orderStorage";
 
-// ─── Mock order data ──────────────────────────────────────────────────────────
+// ─── Delivery timeline steps ──────────────────────────────────────────────────
 
-const order = {
-  id: "KO-2025-48291",
-  date: "Tuesday, 17 March 2025",
-  paymentMethod: "Cash on Delivery",
-  estimatedDelivery: "Friday, 21 March 2025",
-  total: 897,
-  deliveryFee: 0,
-  couponDiscount: 99,
-  subtotal: 996,
-  address: {
-    name: "Meenakshi Rajan",
-    phone: "98765 43210",
-    line1: "No. 12, Gandhi Nagar",
-    line2: "Near Tamil Nadu Bank",
-    city: "Namakkal",
-    state: "Tamil Nadu",
-    pincode: "637501",
-  },
-  items: [
-    {
-      id: 1,
-      name: "Premium Vermicompost",
-      variant: "5 kg × 2",
-      price: 598,
-      image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=200&auto=format&fit=crop&q=80",
-    },
-    {
-      id: 2,
-      name: "Terracotta Pot",
-      variant: "8 inch × 1",
-      price: 249,
-      image: "https://images.unsplash.com/photo-1601004890684-d8cbf643f5f2?w=200&auto=format&fit=crop&q=80",
-    },
-    {
-      id: 3,
-      name: "Premium Tomato Seeds",
-      variant: "Standard pack × 1",
-      price: 149,
-      image: "https://images.unsplash.com/photo-1592919505780-303950717480?w=200&auto=format&fit=crop&q=80",
-    },
-  ],
-};
+const TIMELINE_STEPS = [
+  { key: "confirmed", label: "Order Placed" },
+  { key: "packed",    label: "Being Packed" },
+  { key: "shipped",   label: "Out for Delivery" },
+  { key: "delivered", label: "Delivered" },
+] as const;
 
-const deliverySteps = [
-  { label: "Order Placed", sublabel: "17 Mar", done: true, active: false },
-  { label: "Being Packed", sublabel: "18 Mar", done: false, active: true },
-  { label: "Out for Delivery", sublabel: "20–21 Mar", done: false, active: false },
-  { label: "Delivered", sublabel: "Est. 21 Mar", done: false, active: false },
-];
+const statusIndex = (status: StoredOrder["status"]) =>
+  TIMELINE_STEPS.findIndex((t) => t.key === status);
 
 // ─── Animated checkmark component ────────────────────────────────────────────
 
@@ -113,13 +75,78 @@ const CopyOrderId = ({ id }: { id: string }) => {
   );
 };
 
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
+
+const Skeleton = () => (
+  <div className="min-h-screen bg-[#faf7f2] animate-pulse">
+    <div className="bg-[#3d6b35] h-64" />
+    <div className="max-w-3xl mx-auto px-4 py-8 space-y-4">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="bg-white rounded-2xl h-32 border border-[#e8e0d0]" />
+      ))}
+    </div>
+  </div>
+);
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function OrderConfirmationPage() {
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get("id");
+
+  const [order, setOrder]   = useState<StoredOrder | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!orderId) { setLoaded(true); return; }
+    const orders = getOrders();
+    const found  = orders.find((o) => o.id === orderId);
+    setOrder(found ?? null);
+    setLoaded(true);
+  }, [orderId]);
+
+  if (!loaded) return <Skeleton />;
+
+  // Fallback if order not found (e.g. direct navigation)
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-[#faf7f2] flex flex-col items-center justify-center px-4 text-center py-20">
+        <div className="text-7xl mb-6">📦</div>
+        <h2 className="text-3xl font-bold text-[#2a2a1e] font-outfit mb-3">Order not found</h2>
+        <p className="text-lg text-[#7a7a68] mb-8 max-w-sm">
+          We couldn't find that order. Please check your Orders page.
+        </p>
+        <div className="flex gap-3 flex-wrap justify-center">
+          <Link href="/orders" className="inline-flex items-center gap-2 bg-[#3d6b35] hover:bg-[#335c2c] text-white font-bold text-base px-8 py-4 rounded-xl transition-colors">
+            My Orders
+          </Link>
+          <Link href="/shop" className="inline-flex items-center gap-2 bg-white border-2 border-[#d4c9a8] text-[#3a3a2e] font-bold text-base px-8 py-4 rounded-xl hover:border-[#3d6b35] transition-colors">
+            Continue Shopping
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const currentStepIndex = statusIndex(order.status);
+  const firstName = order.address.name.split(" ")[0] || "friend";
+
+  // Format date nicely
+  const orderDate = new Date(order.date).toLocaleDateString("en-IN", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+
+  // Estimated delivery: order date + 4 days
+  const estDate = new Date(order.date);
+  estDate.setDate(estDate.getDate() + 4);
+  const estimatedDelivery = estDate.toLocaleDateString("en-IN", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+
   return (
     <div className="min-h-screen bg-[#faf7f2]">
 
-      {/* ── Hero confirmation banner ──────────────────── */}
+      {/* ── Hero confirmation banner ── */}
       <div className="bg-[#3d6b35] text-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16 flex flex-col items-center text-center gap-5">
           <AnimatedCheck />
@@ -129,7 +156,7 @@ export default function OrderConfirmationPage() {
               Your order is confirmed! 🎉
             </h1>
             <p className="text-lg sm:text-xl text-white/80 mt-3 max-w-md leading-relaxed">
-              Thank you, {order.address.name.split(" ")[0]}! We've received your order and will start packing it right away.
+              Thank you, {firstName}! We've received your order and will start packing it right away.
             </p>
           </div>
 
@@ -145,12 +172,12 @@ export default function OrderConfirmationPage() {
           </div>
 
           <p className="text-white/70 text-sm">
-            Placed on {order.date} · We'll send updates to your phone
+            Placed on {orderDate} · We'll send updates to your phone
           </p>
         </div>
       </div>
 
-      {/* ── Main content ─────────────────────────────── */}
+      {/* ── Main content ── */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10 flex flex-col gap-6">
 
         {/* Delivery Timeline */}
@@ -161,51 +188,47 @@ export default function OrderConfirmationPage() {
             </div>
             <div>
               <h2 className="text-lg font-bold text-[#2a2a1e]">Delivery Tracking</h2>
-              <p className="text-sm text-[#7a7a68]">Estimated by {order.estimatedDelivery}</p>
+              <p className="text-sm text-[#7a7a68]">Estimated by {estimatedDelivery}</p>
             </div>
           </div>
 
           {/* Timeline */}
-          <div className="flex items-start gap-0">
-            {deliverySteps.map((step, i) => (
-              <div key={step.label} className="flex-1 flex flex-col items-center">
-                {/* Node + connector row */}
-                <div className="flex items-center w-full">
-                  {/* Left connector */}
-                  <div className={`flex-1 h-1 rounded-full ${i === 0 ? "bg-transparent" : step.done || (deliverySteps[i - 1]?.done) ? "bg-[#3d6b35]" : "bg-[#e8e0d0]"}`} />
-                  {/* Circle */}
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
-                    step.done
-                      ? "bg-[#3d6b35] border-[#3d6b35]"
-                      : step.active
-                        ? "bg-white border-[#3d6b35] shadow-md shadow-[#3d6b35]/20"
-                        : "bg-white border-[#e8e0d0]"
-                  }`}>
-                    {step.done ? (
-                      <Check size={16} className="text-white" />
-                    ) : step.active ? (
-                      <div className="w-3 h-3 rounded-full bg-[#3d6b35] animate-pulse" />
-                    ) : (
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#d4c9a8]" />
+          <div className="flex items-start">
+            {TIMELINE_STEPS.map((step, i) => {
+              const done   = i < currentStepIndex;
+              const active = i === currentStepIndex;
+              return (
+                <div key={step.key} className="flex-1 flex flex-col items-center">
+                  <div className="flex items-center w-full">
+                    <div className={`flex-1 h-1 rounded-full ${i === 0 ? "bg-transparent" : (done || i <= currentStepIndex) ? "bg-[#3d6b35]" : "bg-[#e8e0d0]"}`} />
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
+                      done   ? "bg-[#3d6b35] border-[#3d6b35]" :
+                      active ? "bg-white border-[#3d6b35] shadow-md shadow-[#3d6b35]/20" :
+                               "bg-white border-[#e8e0d0]"
+                    }`}>
+                      {done ? (
+                        <Check size={16} className="text-white" />
+                      ) : active ? (
+                        <div className="w-3 h-3 rounded-full bg-[#3d6b35] animate-pulse" />
+                      ) : (
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#d4c9a8]" />
+                      )}
+                    </div>
+                    <div className={`flex-1 h-1 rounded-full ${i === TIMELINE_STEPS.length - 1 ? "bg-transparent" : done ? "bg-[#3d6b35]" : "bg-[#e8e0d0]"}`} />
+                  </div>
+                  <div className="mt-2.5 text-center px-1">
+                    <p className={`text-xs sm:text-sm font-bold leading-tight ${
+                      done ? "text-[#3d6b35]" : active ? "text-[#2a2a1e]" : "text-[#a8a090]"
+                    }`}>
+                      {step.label}
+                    </p>
+                    {active && (
+                      <p className="text-[10px] sm:text-xs mt-0.5 text-[#3d6b35] font-semibold">In progress</p>
                     )}
                   </div>
-                  {/* Right connector */}
-                  <div className={`flex-1 h-1 rounded-full ${i === deliverySteps.length - 1 ? "bg-transparent" : step.done ? "bg-[#3d6b35]" : "bg-[#e8e0d0]"}`} />
                 </div>
-
-                {/* Labels */}
-                <div className="mt-2.5 text-center px-1">
-                  <p className={`text-xs sm:text-sm font-bold leading-tight ${
-                    step.done ? "text-[#3d6b35]" : step.active ? "text-[#2a2a1e]" : "text-[#a8a090]"
-                  }`}>
-                    {step.label}
-                  </p>
-                  <p className={`text-[10px] sm:text-xs mt-0.5 ${step.active ? "text-[#3d6b35] font-semibold" : "text-[#b0a890]"}`}>
-                    {step.sublabel}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -219,10 +242,15 @@ export default function OrderConfirmationPage() {
           </div>
           <p className="text-base font-bold text-[#2a2a1e]">{order.address.name}</p>
           <p className="text-sm text-[#5a5a48] mt-1 leading-relaxed">
-            {order.address.line1}, {order.address.line2},<br />
+            {order.address.line1}
+            {order.address.line2 ? `, ${order.address.line2}` : ""},{" "}
             {order.address.city}, {order.address.state} — {order.address.pincode}
           </p>
           <p className="text-sm text-[#5a5a48] mt-1">📞 {order.address.phone}</p>
+          <div className="flex items-center gap-2 mt-3 text-sm text-[#3d6b35] bg-[#eef5ea] px-3 py-2 rounded-xl w-fit font-semibold">
+            <Truck size={15} />
+            Estimated delivery: 2–4 business days
+          </div>
         </div>
 
         {/* Order Items */}
@@ -237,17 +265,17 @@ export default function OrderConfirmationPage() {
           </div>
 
           <div className="flex flex-col divide-y divide-[#f0ece4]">
-            {order.items.map((item) => (
-              <div key={item.id} className="flex items-center gap-4 px-5 sm:px-6 py-4">
-                <div className="relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden bg-[#f5f0ea] shrink-0 border border-[#e8e0d0]">
+            {order.items.map((item, i) => (
+              <div key={`${item.id}-${i}`} className="flex items-center gap-4 px-5 sm:px-6 py-4">
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-[#f5f0ea] shrink-0 border border-[#e8e0d0]">
                   <Image src={item.image} alt={item.name} fill className="object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-base font-bold text-[#2a2a1e] leading-snug">{item.name}</p>
-                  <p className="text-sm text-[#7a7a68] mt-0.5">{item.variant}</p>
+                  <p className="text-sm text-[#7a7a68] mt-0.5">{item.variant} × {item.quantity}</p>
                 </div>
                 <p className="text-lg font-black text-[#3d6b35] shrink-0">
-                  ₹{item.price.toLocaleString("en-IN")}
+                  ₹{(item.price * item.quantity).toLocaleString("en-IN")}
                 </p>
               </div>
             ))}
@@ -259,15 +287,15 @@ export default function OrderConfirmationPage() {
               <span>Subtotal</span>
               <span className="font-semibold">₹{order.subtotal.toLocaleString("en-IN")}</span>
             </div>
+            {order.couponDiscount > 0 && (
+              <div className="flex justify-between text-sm text-[#3d6b35]">
+                <span>Coupon discount</span>
+                <span className="font-semibold">−₹{order.couponDiscount}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm text-[#3d6b35]">
-              <span>Coupon discount</span>
-              <span className="font-semibold">−₹{order.couponDiscount}</span>
-            </div>
-            <div className="flex justify-between text-sm text-[#3d6b35]">
-              <span className="flex items-center gap-1.5">
-                <Truck size={14} />Delivery
-              </span>
-              <span className="font-bold">FREE</span>
+              <span className="flex items-center gap-1.5"><Truck size={14} />Delivery</span>
+              <span className="font-bold">{order.deliveryFee === 0 ? "FREE" : `₹${order.deliveryFee}`}</span>
             </div>
             <div className="flex justify-between items-baseline pt-2.5 border-t border-[#e8e0d0]">
               <span className="text-lg font-bold text-[#2a2a1e]">
@@ -286,6 +314,12 @@ export default function OrderConfirmationPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Payment method */}
+        <div className="bg-white rounded-2xl border border-[#e8e0d0] p-5 sm:p-6">
+          <h2 className="text-base font-bold text-[#2a2a1e] mb-1">Payment</h2>
+          <p className="text-sm text-[#5a5a48]">{order.paymentMethod}</p>
         </div>
 
         {/* What happens next */}
@@ -335,23 +369,26 @@ export default function OrderConfirmationPage() {
               WhatsApp Us
             </a>
           </div>
-          <p className="text-xs text-[#7a7a68] mt-3 text-center">Mon–Sat, 9am–6pm · Have your Order ID ready: {order.id}</p>
+          <p className="text-xs text-[#7a7a68] mt-3 text-center">
+            Mon–Sat, 9am–6pm · Have your Order ID ready: {order.id}
+          </p>
         </div>
 
         {/* CTA buttons */}
         <div className="flex flex-col sm:flex-row gap-3 pb-4">
+          <Link
+            href="/orders"
+            className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-[#faf7f2] border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#3a3a2e] font-bold text-base py-4 rounded-xl transition-colors"
+          >
+            <Package size={18} />
+            View My Orders
+          </Link>
           <Link
             href="/shop"
             className="flex-1 flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#335c2c] text-white font-bold text-base py-4 rounded-xl transition-colors shadow-md"
           >
             Continue Shopping
             <ArrowRight size={18} />
-          </Link>
-          <Link
-            href="/"
-            className="flex-1 flex items-center justify-center gap-2 bg-white hover:bg-[#faf7f2] border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#3a3a2e] font-bold text-base py-4 rounded-xl transition-colors"
-          >
-            Go to Home
           </Link>
         </div>
       </div>

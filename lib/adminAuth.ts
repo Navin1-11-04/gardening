@@ -11,6 +11,11 @@ export interface AdminToken {
 
 // Create JWT token
 export function createToken(admin: AdminToken): string {
+  console.log(
+    "[createToken] JWT_SECRET:",
+    JWT_SECRET ? JWT_SECRET.substring(0, 10) + "..." : "NOT SET",
+  );
+
   return jwt.sign(
     { id: admin.id, email: admin.email, role: admin.role },
     JWT_SECRET,
@@ -21,9 +26,17 @@ export function createToken(admin: AdminToken): string {
 // Verify JWT token
 export function verifyToken(token: string): AdminToken | null {
   try {
+    console.log(
+      "[verifyToken] JWT_SECRET:",
+      JWT_SECRET ? JWT_SECRET.substring(0, 10) + "..." : "NOT SET",
+    );
+    console.log("[verifyToken] Token:", token.substring(0, 30) + "...");
+
     const decoded = jwt.verify(token, JWT_SECRET) as AdminToken;
+    console.log("[verifyToken] Decoded successfully:", decoded);
     return decoded;
   } catch (error) {
+    console.error("[verifyToken] Error:", error);
     return null;
   }
 }

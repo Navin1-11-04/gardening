@@ -22,18 +22,26 @@ export default function AdminLoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include", // Ensure cookies are sent and received
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         setError(data.error || "Login failed");
         setIsLoading(false);
         return;
       }
 
-      // Redirect to dashboard on success
-      router.push("/admin/dashboard");
+      // Redirect immediately
+      const redirectUrl =
+        new URLSearchParams(window.location.search).get("from") ||
+        "/admin/dashboard";
+
+      // Force a full page redirect
+      window.location.replace(redirectUrl);
     } catch (err) {
+      console.error("Login error:", err);
       setError("An error occurred. Please try again.");
       setIsLoading(false);
     }

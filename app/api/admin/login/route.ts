@@ -44,6 +44,8 @@ export async function POST(request: NextRequest) {
       role: admin.role,
     });
 
+    console.log("[Login API] Token created:", token.substring(0, 20) + "...");
+
     // Set cookie
     const response = NextResponse.json(
       {
@@ -63,7 +65,10 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: "/",
     });
+
+    console.log("[Login API] Cookie set, headers:", response.headers);
 
     return response;
   } catch (error) {
