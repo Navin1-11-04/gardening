@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
-    // Security check - this should only be called on first setup
     const AUTH_KEY = request.headers.get("x-seed-key");
+
     if (AUTH_KEY !== process.env.ADMIN_SEED_KEY) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     console.log("🌱 Seeding database...");
 
-    // Create default admin
     const hashedPassword = await bcrypt.hash("admin123", 10);
 
     const admin = await prisma.admin.upsert({
@@ -31,7 +28,6 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ Created admin:", admin.email);
 
-    // Create categories
     const categories = [
       { name: "Seeds", nameTa: "விதைகள்", slug: "seeds" },
       { name: "Grow Bags", nameTa: "வளர் பைகள்", slug: "grow-bags" },
@@ -63,15 +59,13 @@ export async function POST(request: NextRequest) {
         },
         categoriesCreated: categories.length,
       },
-      { status: 200 },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Seeding error:", error);
     return NextResponse.json(
       { error: "Failed to seed database", details: String(error) },
-      { status: 500 },
+      { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

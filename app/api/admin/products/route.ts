@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
-
-// GET all products
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
@@ -16,24 +13,25 @@ export async function GET() {
     console.error("Fetch products error:", error);
     return NextResponse.json(
       { error: "Failed to fetch products" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
-// CREATE product
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
 
-    // Generate slug from name
-    const slug = data.name.toLowerCase().replace(/\s+/g, "-");
+    const slug = data.name
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
 
     const product = await prisma.product.create({
       data: {
         name: data.name,
-        nameTa: data.nameTa,
-        subtitle: data.subtitle,
+        nameTa: data.nameTa || null,
+        subtitle: data.subtitle || null,
         slug,
         description: data.description,
         price: parseFloat(data.price),
@@ -43,14 +41,14 @@ export async function POST(request: NextRequest) {
         categoryId: parseInt(data.categoryId),
         sku: data.sku,
         stock: parseInt(data.stock),
-        badge: data.badge,
+        badge: data.badge || null,
         highlights: JSON.stringify(data.highlights || []),
         weights: JSON.stringify(data.weights || []),
         active: data.active,
         inStock: parseInt(data.stock) > 0,
-        images: JSON.stringify([
-          "https://via.placeholder.com/400x400?text=" + data.name,
-        ]),
+        images: JSON.stringify(
+          data.images || ["https://via.placeholder.com/400x400"]
+        ),
         howToUse: JSON.stringify([]),
       },
       include: { category: { select: { name: true } } },
@@ -61,7 +59,7 @@ export async function POST(request: NextRequest) {
     console.error("Create product error:", error);
     return NextResponse.json(
       { error: "Failed to create product" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

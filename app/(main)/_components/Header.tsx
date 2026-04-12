@@ -5,13 +5,18 @@ import { Menu, Search, ShoppingCart, X, Phone, Package } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useCart } from "../_context/CartContext";
-import { LanguageToggle } from "./LanguageToggle";
-import { useTranslation } from "@/lib/i18n/useTranslation";
+
+const navLinks = [
+  { label: "Home",      href: "/" },
+  { label: "Shop",      href: "/shop" },
+  { label: "Guides",    href: "/guides" },
+  { label: "My Orders", href: "/orders" },
+  { label: "Contact",   href: "/contact" },
+];
 
 export const Header = () => {
   const router   = useRouter();
   const pathname = usePathname();
-  const { t }    = useTranslation();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [query,    setQuery]    = useState("");
@@ -20,15 +25,6 @@ export const Header = () => {
   const prevTotal           = useRef(totalItems);
   const inputRef            = useRef<HTMLInputElement>(null);
   const mobileInputRef      = useRef<HTMLInputElement>(null);
-
-  // Nav links use translated labels
-  const navLinks = [
-    { label: t("common.home",     "Home"),      href: "/" },
-    { label: t("common.shop",     "Shop"),      href: "/shop" },
-    { label: t("common.guides",   "Guides"),    href: "/guides" },
-    { label: t("common.myOrders", "My Orders"), href: "/orders" },
-    { label: t("common.contact",  "Contact"),   href: "/contact" },
-  ];
 
   useEffect(() => {
     if (totalItems > prevTotal.current) {
@@ -66,12 +62,12 @@ export const Header = () => {
       <div className="bg-[#3d6b35] text-white text-center py-2 px-4">
         <p className="text-sm font-medium flex items-center justify-center gap-2 flex-wrap">
           <Phone size={14} />
-          {t("header.helpText", "Need help? Call us:")}&nbsp;
+          உதவி வேண்டுமா? அழைக்கவும் / Need help? Call us:&nbsp;
           <a href="tel:+919876543210" className="font-bold underline underline-offset-2">
             +91 98765 43210
           </a>
           <span className="hidden sm:inline text-white/50 mx-1">|</span>
-          <span className="hidden sm:inline">{t("header.businessHours", "Mon–Sat, 9am–6pm")}</span>
+          <span className="hidden sm:inline">திங்கள்–சனி, 9am–6pm</span>
         </p>
       </div>
 
@@ -100,8 +96,6 @@ export const Header = () => {
 
         {/* Right side */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <LanguageToggle />
-
           {/* Desktop search */}
           <form
             onSubmit={handleSearch}
@@ -113,7 +107,7 @@ export const Header = () => {
             <input
               ref={inputRef}
               type="text"
-              placeholder={t("common.search", "Search products...")}
+              placeholder="Search products..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="bg-transparent outline-none text-base w-full text-[#3a3a2e] placeholder:text-[#b0a890]"
@@ -130,7 +124,7 @@ export const Header = () => {
             className="relative flex items-center gap-2 bg-[#3d6b35] hover:bg-[#335c2c] text-white px-4 py-2.5 rounded-xl transition-colors"
           >
             <ShoppingCart size={20} />
-            <span className="hidden sm:inline text-sm font-bold">{t("header.cart", "Cart")}</span>
+            <span className="hidden sm:inline text-sm font-bold">Cart</span>
             {totalItems > 0 && (
               <span
                 className={`absolute -top-1.5 -right-1.5 bg-[#e86c2c] text-white text-xs min-w-5 w-5 h-5 flex items-center justify-center rounded-full font-bold leading-none px-1 transition-transform ${
@@ -166,7 +160,7 @@ export const Header = () => {
             <input
               ref={mobileInputRef}
               type="text"
-              placeholder={t("common.search", "Search products...")}
+              placeholder="Search products..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="bg-transparent outline-none text-base w-full text-[#3a3a2e] placeholder:text-[#b0a890]"

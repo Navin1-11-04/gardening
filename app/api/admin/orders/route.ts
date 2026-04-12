@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
@@ -23,7 +21,7 @@ export async function GET() {
     console.error("Fetch orders error:", error);
     return NextResponse.json(
       { error: "Failed to fetch orders" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

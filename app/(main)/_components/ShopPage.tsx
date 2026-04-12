@@ -105,6 +105,10 @@ const StarRating = ({
 );
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
+// ─── Product Card ─────────────────────────────────────────────────────────────
+// Replace the ProductCard component in your ShopPage.tsx with this version.
+// It shows the Tamil name (nameTa) prominently above the English name, 
+// matching the reference image style.
 
 const ProductCard = ({
   product,
@@ -159,15 +163,29 @@ const ProductCard = ({
         />
       </div>
 
-      <div className="p-3 sm:p-4 flex flex-col flex-1 gap-2">
+      <div className="p-3 sm:p-4 flex flex-col flex-1 gap-1.5">
+        {/* Tamil name — shown prominently above English */}
+        {product.nameTa && (
+          <p className="text-base sm:text-lg font-bold text-[#2a2a1e] leading-snug font-outfit">
+            {product.nameTa}
+          </p>
+        )}
+
+        {/* English name */}
         <div>
-          <h3 className="text-sm sm:text-base font-bold text-[#2a2a1e] leading-snug">
+          <h3 className={`font-semibold text-[#5a5a48] leading-snug ${product.nameTa ? "text-xs sm:text-sm" : "text-sm sm:text-base font-bold text-[#2a2a1e]"}`}>
             <Highlight text={product.name} query={searchQuery} />
           </h3>
-          <p className="text-xs sm:text-sm text-[#7a7a68] mt-0.5">
-            <Highlight text={product.subtitle} query={searchQuery} />
-          </p>
+          {/* Tamil subtitle as helper */}
+          {product.subtitleTa ? (
+            <p className="text-xs text-[#7a9e5f] mt-0.5">{product.subtitleTa}</p>
+          ) : (
+            <p className="text-xs sm:text-sm text-[#7a7a68] mt-0.5">
+              <Highlight text={product.subtitle} query={searchQuery} />
+            </p>
+          )}
         </div>
+
         <StarRating rating={product.rating} reviews={product.reviews} />
         <div className="flex items-baseline gap-2 mt-auto">
           <span className="text-lg sm:text-xl font-black text-[#3d6b35]">
@@ -190,7 +208,7 @@ const ProductCard = ({
           }`}
         >
           <ShoppingCart size={16} />
-          {justAdded ? "Added!" : inCart ? "In Cart ✓" : "Add to Cart"}
+          {justAdded ? "சேர்க்கப்பட்டது! ✓" : inCart ? "கார்ட்டில் உள்ளது ✓" : "கார்ட்டில் சேர்க்க"}
         </button>
       </div>
     </Link>

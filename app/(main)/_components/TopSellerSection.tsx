@@ -39,7 +39,7 @@ const AddToCartBtn = ({ product }: { product: Product }) => {
       }`}
     >
       <ShoppingCart size={18} />
-      {justAdded ? "Added!" : inCart ? "In Cart ✓" : "Add to Cart"}
+      {justAdded ? "சேர்க்கப்பட்டது! ✓" : inCart ? "கார்ட்டில் உள்ளது ✓" : "கார்ட்டில் சேர்க்க"}
     </button>
   );
 };
@@ -48,8 +48,8 @@ const SkeletonCard = () => (
   <div className="flex flex-col bg-white rounded-2xl overflow-hidden border border-[#e8e0d0] animate-pulse">
     <div className="aspect-square bg-[#f0ece4]" />
     <div className="p-4 flex flex-col gap-3">
-      <div className="h-4 bg-[#f0ece4] rounded-lg w-3/4" />
-      <div className="h-3 bg-[#f0ece4] rounded-lg w-1/2" />
+      <div className="h-5 bg-[#f0ece4] rounded-lg w-3/4" />
+      <div className="h-4 bg-[#f0ece4] rounded-lg w-1/2" />
       <div className="h-7 bg-[#f0ece4] rounded-lg w-1/3 mt-2" />
       <div className="h-9 bg-[#f0ece4] rounded-xl" />
     </div>
@@ -107,11 +107,21 @@ export const TopSellersSection = () => {
                     )}
                     <Image src={product.images[0]} alt={product.name} fill className="object-cover group-hover:scale-105 transition duration-500" />
                   </div>
-                  <div className="p-3 sm:p-4 flex flex-col flex-1 gap-2">
-                    <div>
-                      <h3 className="text-base sm:text-lg font-bold text-[#2a2a1e] leading-snug">{product.name}</h3>
-                      <p className="text-sm text-[#7a7a68] mt-0.5">{product.subtitle}</p>
-                    </div>
+                  <div className="p-3 sm:p-4 flex flex-col flex-1 gap-1.5">
+                    {/* Tamil name — shown prominently */}
+                    {product.nameTa && (
+                      <h3 className="text-base sm:text-lg font-bold text-[#2a2a1e] leading-snug font-outfit">
+                        {product.nameTa}
+                      </h3>
+                    )}
+                    {/* English name as helper */}
+                    <p className={`leading-snug ${product.nameTa ? "text-xs text-[#7a7a68]" : "text-base sm:text-lg font-bold text-[#2a2a1e]"}`}>
+                      {product.name}
+                    </p>
+                    {/* Tamil subtitle */}
+                    {product.subtitleTa && (
+                      <p className="text-xs text-[#7a9e5f]">{product.subtitleTa}</p>
+                    )}
                     <p className="text-xl sm:text-2xl font-black text-[#3d6b35] mt-auto pt-1">₹{product.price}</p>
                     <div onClick={(e) => e.preventDefault()}>
                       <AddToCartBtn product={product} />
@@ -126,7 +136,7 @@ export const TopSellersSection = () => {
           <Link href="/shop"
             className="inline-flex items-center gap-2 bg-white border-2 border-[#3d6b35] text-[#3d6b35] hover:bg-[#3d6b35] hover:text-white font-bold text-base sm:text-lg px-8 py-4 rounded-xl transition-all duration-200"
           >
-            View All Products →
+            அனைத்து பொருட்களையும் காண்க →
           </Link>
         </div>
       </div>

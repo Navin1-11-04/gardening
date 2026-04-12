@@ -3,7 +3,9 @@
 export interface Product {
   id: number;
   name: string;
+  nameTa?: string;       // Tamil name shown alongside English
   subtitle: string;
+  subtitleTa?: string;   // Tamil subtitle
   description: string;
   highlights: string[];
   howToUse: { step: string; title: string; desc: string }[];
@@ -27,7 +29,9 @@ export const products: Product[] = [
   {
     id: 1,
     name: "Tomato Seeds",
+    nameTa: "தக்காளி விதைகள்",
     subtitle: "Pack of 50 seeds",
+    subtitleTa: "50 விதைகள் பேக்",
     description: "Premium hybrid tomato seeds suited for balcony pots and grow bags. High germination rate, disease-resistant variety that produces firm, juicy tomatoes in 60–70 days.",
     highlights: ["50 seeds per pack", "Germination rate above 90%", "Suitable for pots and grow bags", "Ready in 60–70 days", "Disease-resistant hybrid variety"],
     howToUse: [
@@ -48,7 +52,9 @@ export const products: Product[] = [
   {
     id: 2,
     name: "Spinach Seeds",
+    nameTa: "கீரை விதைகள்",
     subtitle: "Easy to grow at home",
+    subtitleTa: "வீட்டிலேயே எளிதாக வளர்க்கலாம்",
     description: "Fast-growing spinach seeds ideal for beginners. Ready to harvest in just 3 weeks, making them perfect for continuous cropping on balconies and terraces.",
     highlights: ["Harvest in 3–4 weeks", "High yield per pot", "Rich in iron and vitamins", "Grows well in partial shade", "Re-sow every 2 weeks for continuous harvest"],
     howToUse: [
@@ -69,7 +75,9 @@ export const products: Product[] = [
   {
     id: 3,
     name: "Chilli Seeds",
+    nameTa: "மிளகாய் விதைகள்",
     subtitle: "Pack of 30 seeds",
+    subtitleTa: "30 விதைகள் பேக்",
     description: "Hot and productive chilli variety perfect for home gardens. Plants produce abundantly over many months with minimal care, making them one of the easiest vegetables to grow.",
     highlights: ["30 seeds per pack", "High yield throughout the season", "Suitable for pots as small as 8 inches", "Both green and red stage usable", "Very low maintenance"],
     howToUse: [
@@ -90,7 +98,9 @@ export const products: Product[] = [
   {
     id: 4,
     name: "Coriander Seeds",
+    nameTa: "கொத்தமல்லி விதைகள்",
     subtitle: "Pack of 100 seeds",
+    subtitleTa: "100 விதைகள் பேக்",
     description: "Fresh coriander seeds for continuous kitchen garden harvest. Sow directly in pots and harvest leaves within 3 weeks. One of the most popular herbs for Indian home gardens.",
     highlights: ["100 seeds per pack", "Ready in 3 weeks", "Perfect for kitchen windowsills", "Cut-and-come-again variety", "Strong aroma"],
     howToUse: [
@@ -110,7 +120,9 @@ export const products: Product[] = [
   {
     id: 5,
     name: "Marigold Seeds",
+    nameTa: "சாமந்தி விதைகள்",
     subtitle: "Vibrant flowering variety",
+    subtitleTa: "அழகான மலர் வகை",
     description: "Bright orange and yellow marigold seeds that bloom abundantly and naturally repel pests. A must-have for any kitchen garden — beautiful and functional.",
     highlights: ["Natural pest repellent", "Blooms in 6–8 weeks", "Attracts beneficial insects", "Low water requirement", "Long blooming season"],
     howToUse: [
@@ -131,7 +143,9 @@ export const products: Product[] = [
   {
     id: 6,
     name: "Basil Seeds",
+    nameTa: "துளசி விதைகள்",
     subtitle: "Aromatic herb seeds",
+    subtitleTa: "மணமுள்ள மூலிகை விதைகள்",
     description: "Sweet basil seeds perfect for windowsill growing. Fresh basil is indispensable in the kitchen and this variety produces lush, fragrant leaves with very little effort.",
     highlights: ["Ready in 3–4 weeks", "Strong aromatic fragrance", "Great for windowsills", "Pinch regularly for bushier growth", "Companion plant — deters aphids"],
     howToUse: [
@@ -154,7 +168,9 @@ export const products: Product[] = [
   {
     id: 7,
     name: "Terracotta Pot",
+    nameTa: "மண் குடுவை",
     subtitle: "8 inch — handcrafted",
+    subtitleTa: "8 இன்ச் — கை வேலைப்பாடு",
     description: "Traditional handcrafted terracotta pot with drainage hole. The porous clay material allows roots to breathe and regulates moisture naturally — making it the best choice for most plants.",
     highlights: ["8 inch diameter", "Drainage hole at base", "Handcrafted clay — porous and breathable", "Regulates moisture naturally", "Suitable for all plants"],
     howToUse: [
@@ -175,7 +191,9 @@ export const products: Product[] = [
   {
     id: 8,
     name: "Ceramic Pot Set",
+    nameTa: "மட்பாண்ட குடுவை செட்",
     subtitle: "Set of 3 — white finish",
+    subtitleTa: "3 குடுவைகள் — வெள்ளை நிறம்",
     description: "Elegant white ceramic pots with a matte finish. Set of 3 in graduated sizes, perfect for indoor plants, herbs, and succulents. Each pot has a drainage hole and matching saucer.",
     highlights: ["Set of 3 graduated sizes", "Matching saucers included", "Drainage holes in each pot", "Food-safe glaze", "Suitable for indoor and outdoor use"],
     howToUse: [
@@ -196,7 +214,9 @@ export const products: Product[] = [
   {
     id: 9,
     name: "Hanging Planter",
+    nameTa: "தொங்கும் தாவர கொத்து",
     subtitle: "Macramé with plastic pot",
+    subtitleTa: "மேக்ரமே கயிறு மற்றும் பிளாஸ்டிக் குடுவை",
     description: "Handwoven macramé hanger with a 6-inch plastic pot. Perfect for balconies, windows, and indoor spaces. Creates a beautiful vertical garden without using floor space.",
     highlights: ["6-inch plastic pot included", "Handwoven cotton macramé", "Holds up to 2 kg", "Drainage hole in pot", "Suitable for trailing plants"],
     howToUse: [
@@ -216,7 +236,9 @@ export const products: Product[] = [
   {
     id: 10,
     name: "Clay Plant Pot",
+    nameTa: "களிமண் குடுவை",
     subtitle: "6 inch — indoor garden",
+    subtitleTa: "6 இன்ச் — உள்ளரங்க தோட்டம்",
     description: "Compact 6-inch clay pot ideal for indoor plants, herbs, and small vegetables. The natural clay helps regulate soil temperature and moisture, keeping roots healthy.",
     highlights: ["6 inch diameter", "Natural red clay", "Drainage hole included", "Ideal for herbs and small plants", "Budget-friendly"],
     howToUse: [
@@ -239,7 +261,9 @@ export const products: Product[] = [
   {
     id: 11,
     name: "Premium Vermicompost",
+    nameTa: "மண்புழு உரம்",
     subtitle: "5 kg — 100% organic",
+    subtitleTa: "5 கிலோ — 100% இயற்கை",
     description: "Made from the finest earthworm castings composted over 90 days. Enriches soil structure, improves water retention, and delivers slow-release nutrients directly to plant roots. Safe for all plants.",
     highlights: ["Rich in N, P, K", "Improves soil texture and drainage", "Safe for vegetables and herbs", "No chemical additives", "Odourless and easy to use"],
     howToUse: [
@@ -260,7 +284,9 @@ export const products: Product[] = [
   {
     id: 12,
     name: "Neem Cake Powder",
+    nameTa: "வேப்பம் பிண்ணாக்கு",
     subtitle: "1 kg — natural pest repellent",
+    subtitleTa: "1 கிலோ — இயற்கை பூச்சி விரட்டி",
     description: "Cold-pressed neem cake powder that acts as both a fertiliser and a natural pesticide. Protects plants from soil-borne pests and nematodes while adding nitrogen and organic matter.",
     highlights: ["Dual action: fertiliser + pest repellent", "Controls soil-borne pests and nematodes", "100% natural — no chemicals", "Rich in nitrogen", "Safe for all plants"],
     howToUse: [
@@ -280,7 +306,9 @@ export const products: Product[] = [
   {
     id: 13,
     name: "Seaweed Liquid",
+    nameTa: "கடற்பாசி திரவ உரம்",
     subtitle: "500ml concentrate",
+    subtitleTa: "500 மிலி செறிவூட்டல்",
     description: "Premium seaweed extract liquid fertiliser that promotes root growth, flowering, and fruiting. Mix with water and apply as a foliar spray or soil drench. Excellent for fruiting plants like tomatoes.",
     highlights: ["Promotes root growth and flowering", "Rich in natural plant hormones", "Increases fruit yield", "Apply as spray or soil drench", "Works on all flowering plants"],
     howToUse: [
@@ -300,7 +328,9 @@ export const products: Product[] = [
   {
     id: 14,
     name: "Bone Meal Powder",
+    nameTa: "எலும்பு மாவு",
     subtitle: "2 kg — slow release",
+    subtitleTa: "2 கிலோ — மெதுவாக வெளியிடும்",
     description: "Steamed bone meal powder rich in phosphorus and calcium. Excellent for root development and flowering. Slow-release formula feeds plants over several months.",
     highlights: ["High phosphorus content", "Promotes strong root development", "Slow-release — feeds for months", "Ideal for flowering and fruiting plants", "100% natural"],
     howToUse: [
@@ -322,7 +352,9 @@ export const products: Product[] = [
   {
     id: 15,
     name: "Fabric Grow Bag",
+    nameTa: "துணி வளர் பை",
     subtitle: "15 litre — set of 3",
+    subtitleTa: "15 லிட்டர் — 3 பைகள் செட்",
     description: "Heavy-duty breathable fabric grow bags that promote healthy root pruning and excellent drainage. Far superior to plastic pots for most vegetables. Lightweight and foldable for easy storage.",
     highlights: ["Air-prunes roots for healthier plants", "Superior drainage — no root rot", "Lightweight and foldable", "Durable — lasts 5+ seasons", "Set of 3 bags"],
     howToUse: [
@@ -342,7 +374,9 @@ export const products: Product[] = [
   {
     id: 16,
     name: "Large Grow Bag",
+    nameTa: "பெரிய வளர் பை",
     subtitle: "40 litre — heavy duty",
+    subtitleTa: "40 லிட்டர் — கனமான வேலை",
     description: "Extra-large 40-litre fabric grow bag for big plants like brinjal, pumpkin, and large tomato varieties. Reinforced stitching and sturdy handles for easy moving.",
     highlights: ["40 litre capacity", "Reinforced handles", "Extra-durable 300gsm fabric", "Ideal for large vegetables", "Air-pruning for healthy roots"],
     howToUse: [
@@ -362,7 +396,9 @@ export const products: Product[] = [
   {
     id: 17,
     name: "UV Grow Bag Kit",
+    nameTa: "UV வளர் பை கிட்",
     subtitle: "Set of 5 — UV resistant",
+    subtitleTa: "5 பைகள் — சூரிய ஒளி எதிர்ப்பு",
     description: "UV-stabilised grow bags that won't degrade in harsh Tamil Nadu sunlight. Includes 5 bags in mixed sizes — ideal for a starter terrace garden.",
     highlights: ["UV stabilised — won't fade or crack", "Set of 5 in mixed sizes", "Suitable for direct sunlight", "BPA-free material", "Drainage holes pre-punched"],
     howToUse: [
@@ -384,7 +420,9 @@ export const products: Product[] = [
   {
     id: 18,
     name: "Coco Peat Block",
+    nameTa: "தேங்காய் நார் தொகுதி",
     subtitle: "650g — expands to 8L",
+    subtitleTa: "650 கிராம் — 8 லிட்டராக விரிவடையும்",
     description: "Premium compressed coco peat block made from 100% coconut husk fibre. Add water and it expands to 8 litres of light, airy growing medium. Perfect for seed starting and mixing with soil.",
     highlights: ["650g block expands to 8 litres", "100% natural coconut fibre", "Excellent water retention", "Promotes root growth", "pH neutral — suitable for all plants"],
     howToUse: [
@@ -404,7 +442,9 @@ export const products: Product[] = [
   {
     id: 19,
     name: "Coco Peat Powder",
+    nameTa: "தேங்காய் நார் தூள்",
     subtitle: "5 kg loose bag",
+    subtitleTa: "5 கிலோ தளர்வான பை",
     description: "Ready-to-use loose coco peat powder — no soaking required. Pre-washed and buffered. Ideal for large-scale mixing for grow bags, raised beds, and seed trays.",
     highlights: ["Ready to use — no soaking needed", "Pre-washed and buffered", "Low EC — won't burn roots", "5 kg bag (approx. 40L when hydrated)", "Suitable for all potting mixes"],
     howToUse: [
@@ -426,7 +466,9 @@ export const products: Product[] = [
   {
     id: 20,
     name: "Garden Water Spray",
+    nameTa: "தோட்ட நீர் தெளிப்பான்",
     subtitle: "1L — adjustable nozzle",
+    subtitleTa: "1 லிட்டர் — சரிசெய்யக்கூடிய முனை",
     description: "1-litre hand pressure sprayer with an adjustable nozzle for mist to jet settings. Perfect for watering seedlings, applying liquid fertiliser, and foliar spraying.",
     highlights: ["1 litre capacity", "Adjustable nozzle — mist to jet", "Comfortable grip handle", "Durable HDPE plastic", "Easy to clean"],
     howToUse: [
@@ -446,7 +488,9 @@ export const products: Product[] = [
   {
     id: 21,
     name: "Trowel & Fork Set",
+    nameTa: "தோட்ட கருவி செட்",
     subtitle: "Stainless steel — ergonomic",
+    subtitleTa: "துருப்பிடிக்காத எஃகு — கை சேர்ந்த வடிவம்",
     description: "Heavy-duty stainless steel trowel and hand fork with ergonomic rubber handles. Rust-resistant and comfortable to use. Essential tools for transplanting, weeding, and loosening soil.",
     highlights: ["Stainless steel — rust-resistant", "Ergonomic rubber grip", "Depth markings on trowel", "Set of 2 tools", "Suitable for pots and raised beds"],
     howToUse: [
@@ -466,7 +510,9 @@ export const products: Product[] = [
   {
     id: 22,
     name: "Plant Starter Kit",
+    nameTa: "தாவர தொடக்க கிட்",
     subtitle: "Everything to begin",
+    subtitleTa: "தொடங்க தேவையான அனைத்தும்",
     description: "The complete beginner gardening kit. Includes a coco peat block, two seed packs (tomato + coriander), a small bag of vermicompost, a trowel, and a spray bottle. Everything you need in one box.",
     highlights: ["Coco peat block (650g)", "Tomato + coriander seed packs", "Vermicompost (500g)", "Mini trowel", "Spray bottle (500ml)"],
     howToUse: [

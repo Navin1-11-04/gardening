@@ -6,7 +6,6 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding database...");
 
-  // Create default admin
   const hashedPassword = await bcrypt.hash("admin123", 10);
 
   const admin = await prisma.admin.upsert({
@@ -23,7 +22,6 @@ async function main() {
 
   console.log("✅ Created admin:", admin.email);
 
-  // Create categories
   const categories = [
     { name: "Seeds", nameTa: "விதைகள்", slug: "seeds" },
     { name: "Grow Bags", nameTa: "வளர் பைகள்", slug: "grow-bags" },
@@ -32,32 +30,29 @@ async function main() {
     { name: "Pots", nameTa: "குடுவைகள்", slug: "pots" },
   ];
 
-  for (const cat of categories) {
-    await prisma.category.upsert({
-      where: { slug: cat.slug },
-      update: {},
-      create: {
-        name: cat.name,
-        nameTa: cat.nameTa,
-        slug: cat.slug,
-      },
-    });
-  }
+  await Promise.all(
+    categories.map((cat) =>
+      prisma.category.upsert({
+        where: { slug: cat.slug },
+        update: {},
+        create: cat,
+      })
+    )
+  );
 
   console.log("✅ Created categories");
 
-  console.log("✅ Database seeded successfully!");
+  console.log("\n🔥 Database seeded successfully!");
   console.log("📝 Admin Credentials:");
   console.log("   Email: admin@kavin-organics.com");
   console.log("   Password: admin123");
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (e) => {
-    console.error(e);
-    await prisma.$disconnect();
+  .catch((e) => {
+    console.error("❌ Seeding failed:", e);
     process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
   });
