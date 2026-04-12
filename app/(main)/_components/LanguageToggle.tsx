@@ -1,35 +1,26 @@
 "use client";
 
-import { useTranslation } from "@/lib/i18n/useTranslation";
-import { Globe } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export function LanguageToggle() {
-  const { locale, changeLocale } = useTranslation();
+  const { locale, changeLocale } = useLanguage();
 
   return (
-    <div className="flex items-center gap-1 bg-gray-100 rounded-full p-1">
-      <button
-        onClick={() => changeLocale("en")}
-        className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-          locale === "en"
-            ? "bg-white text-[#3d6b35] shadow"
-            : "text-gray-600 hover:text-gray-900"
-        }`}
-        title="English"
-      >
-        EN
-      </button>
-      <button
-        onClick={() => changeLocale("ta")}
-        className={`px-3 py-1 rounded-full text-sm font-medium transition ${
-          locale === "ta"
-            ? "bg-white text-[#3d6b35] shadow"
-            : "text-gray-600 hover:text-gray-900"
-        }`}
-        title="Tamil"
-      >
-        TA
-      </button>
+    <div className="flex items-center gap-0.5 bg-white/10 rounded-full p-1 border border-white/20 backdrop-blur-sm">
+      {(["en", "ta"] as const).map((loc) => (
+        <button
+          key={loc}
+          onClick={() => changeLocale(loc)}
+          className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all duration-200 ${
+            locale === loc
+              ? "bg-white text-[#3d6b35] shadow-sm"
+              : "text-white/70 hover:text-white"
+          }`}
+          title={loc === "en" ? "English" : "தமிழ்"}
+        >
+          {loc.toUpperCase()}
+        </button>
+      ))}
     </div>
   );
 }

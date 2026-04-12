@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Figtree } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import localFont from "next/font/local";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 const figtree = Figtree({
   subsets: ["latin"],
@@ -46,7 +47,10 @@ export default function RootLayout({
       )}
     >
       <body className="font-sans antialiased">
-        {children}
+        {/* LanguageProvider at root so every page (shop, admin, etc.) shares the same locale */}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

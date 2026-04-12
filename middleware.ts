@@ -4,45 +4,38 @@ import { verifyToken } from "@/lib/adminAuth";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only protect /admin routes
+  // Only gate /admin/* paths
   if (!pathname.startsWith("/admin")) return NextResponse.next();
 
-  // Allow login page through always
+  // The login page itself is always accessible
   if (pathname === "/admin/login") return NextResponse.next();
 
-  // Get token from cookie
+  // Read the cookie
   const token = request.cookies.get("admin_token")?.value;
-  console.log("[Middleware] Pathname:", pathname);
-  console.log("[Middleware] Token present:", !!token);
-  console.log(
-    "[Middleware] Token value:",
-    token ? token.substring(0, 20) + "..." : "none",
-  );
 
   if (!token) {
-    console.log("[Middleware] No token, redirecting to login");
-    const loginUrl = new URL("/admin/login", request.url);
-    loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/login";
+    url.searchParams.set("from", pathname);
+    return NextResponse.redirect(url);
   }
 
   const decoded = verifyToken(token);
-  console.log("[Middleware] Token verified:", !!decoded);
-
   if (!decoded) {
-    console.log("[Middleware] Token verification failed, redirecting to login");
-    const loginUrl = new URL("/admin/login", request.url);
-    loginUrl.searchParams.set("from", pathname);
-    const response = NextResponse.redirect(loginUrl);
-    response.cookies.delete("admin_token");
-    return response;
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/login";
+    url.searchParams.set("from", pathname);
+    const res = NextResponse.redirect(url);
+    // Clear the invalid cookie
+    res.cookies.set("admin_token", "", { maxAge: 0, path: "/" });
+    return res;
   }
 
-  // Token valid — allow through
-  console.log("[Middleware] Token valid, allowing access");
+  // Valid token — let request through
   return NextResponse.next();
 }
 
 export const config = {
+  // Match every /admin/* route including nested
   matcher: ["/admin/:path*"],
 };
