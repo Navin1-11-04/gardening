@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/adminAuth";
+import { jwtVerify } from "jose";
 
-export function middleware(request: NextRequest) {
+// TextEncoder produces a Uint8Array that `jose` expects
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || "default-secret"
+);
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Only gate /admin/* paths
@@ -12,6 +17,7 @@ export function middleware(request: NextRequest) {
 
   const token = request.cookies.get("admin_token")?.value;
 
+  // No token → redirect to login
   if (!token) {
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
@@ -19,8 +25,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const decoded = verifyToken(token);
-  if (!decoded) {
+  // Verify with jose (fully Edge-compatible — no Node.js crypto needed)
+  try {
+    await jwtVerify(token, JWT_SECRET);
+    return NextResponse.next();
+  } catch {
+    // Invalid / expired token → clear cookie and redirect
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
     url.searchParams.set("from", pathname);
@@ -28,8 +38,6 @@ export function middleware(request: NextRequest) {
     res.cookies.set("admin_token", "", { maxAge: 0, path: "/" });
     return res;
   }
-
-  return NextResponse.next();
 }
 
 export const config = {
