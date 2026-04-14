@@ -25,7 +25,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Allow larger payloads for base64 images
-export const config = {
-  api: { bodyParser: { sizeLimit: "10mb" } },
-};
+export const dynamic = "force-dynamic";
