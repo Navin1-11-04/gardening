@@ -1,6 +1,9 @@
+import { Suspense } from "react";
 import { Header } from "../_components/Header";
 import { Footer } from "../_components/Footer";
 import OrderConfirmationPage from "./OrderConfirmation";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Order Confirmed — Kavin Organics",
@@ -11,7 +14,11 @@ export default function OrderConfirmation() {
   return (
     <>
       <Header />
-      <OrderConfirmationPage />
+
+      <Suspense fallback={<div>Loading...</div>}>
+        <OrderConfirmationPage />
+      </Suspense>
+
       <Footer />
     </>
   );
