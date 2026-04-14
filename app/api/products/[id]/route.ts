@@ -1,101 +1,107 @@
 // app/api/products/[id]/route.ts
-// Tries DB first, falls back to static product data
+// Tries MongoDB first (by ObjectId or numeric id), falls back to static data.
 
 import { NextRequest, NextResponse } from "next/server";
 import { getProductById, getRelatedProducts } from "@/data/Product";
 
-async function getFromDatabase(id: number) {
+async function getFromMongo(id: string) {
   try {
-    const { PrismaClient } = await import("@prisma/client");
-    const prisma = new PrismaClient();
+    const { connectDB } = await import("@/lib/mongodb");
+    const { Product } = await import("@/models/Product");
+    const { Category } = await import("@/models/Category");
 
-    const p = await prisma.product.findUnique({
-      where: { id },
-      include: { category: { select: { name: true, slug: true } } },
-    });
+    await connectDB();
 
-    await prisma.$disconnect();
+    // Try MongoDB ObjectId first, then fallback to numeric lookup isn't needed
+    // since MongoDB uses ObjectIds
+    const p = await Product.findById(id)
+      .populate("categoryId", "name slug")
+      .lean();
+
     if (!p) return null;
 
     const product = {
-      id: p.id,
-      name: p.name,
-      subtitle: p.subtitle ?? "",
-      description: p.description,
-      highlights: safeJson(p.highlights, []),
-      howToUse: safeJson(p.howToUse, []),
-      price: p.price,
-      originalPrice: p.originalPrice ?? undefined,
-      badge: p.badge ?? undefined,
-      category: p.category?.slug ?? "uncategorized",
-      images: safeJson(p.images, ["https://via.placeholder.com/400"]),
-      rating: p.rating,
-      reviews: p.reviews,
-      weights: safeJson(p.weights, []),
-      sku: p.sku,
-      inStock: p.inStock,
-      deliveryDays: "2–4",
+      id: (p as any)._id.toString(),
+      name: (p as any).name,
+      nameTa: (p as any).nameTa,
+      subtitle: (p as any).subtitle ?? "",
+      subtitleTa: (p as any).subtitleTa,
+      description: (p as any).description,
+      highlights: (p as any).highlights ?? [],
+      howToUse: (p as any).howToUse ?? [],
+      price: (p as any).price,
+      originalPrice: (p as any).originalPrice,
+      badge: (p as any).badge,
+      category: (p as any).categoryId?.slug ?? "uncategorized",
+      images: (p as any).images ?? [],
+      rating: (p as any).rating,
+      reviews: (p as any).reviews,
+      weights: (p as any).weights ?? [],
+      sku: (p as any).sku,
+      inStock: (p as any).inStock,
+      deliveryDays: (p as any).deliveryDays ?? "2–4",
     };
 
-    // Related: same category, different product
-    const { PrismaClient: PC2 } = await import("@prisma/client");
-    const p2 = new PC2();
-    const relatedRaw = await p2.product.findMany({
-      where: { categoryId: p.categoryId, id: { not: id }, active: true },
-      take: 4,
-      include: { category: { select: { slug: true } } },
-    });
-    await p2.$disconnect();
+    // Related products — same category
+    const related = await Product.find({
+      categoryId: (p as any).categoryId?._id ?? (p as any).categoryId,
+      _id: { $ne: (p as any)._id },
+      active: true,
+    })
+      .populate("categoryId", "name slug")
+      .limit(4)
+      .lean();
 
-    const related = relatedRaw.map((r) => ({
-      id: r.id,
+    const relatedMapped = related.map((r: any) => ({
+      id: r._id.toString(),
       name: r.name,
+      nameTa: r.nameTa,
       subtitle: r.subtitle ?? "",
       description: r.description,
-      highlights: safeJson(r.highlights, []),
-      howToUse: safeJson(r.howToUse, []),
+      highlights: r.highlights ?? [],
+      howToUse: r.howToUse ?? [],
       price: r.price,
-      originalPrice: r.originalPrice ?? undefined,
-      badge: r.badge ?? undefined,
-      category: r.category?.slug ?? "uncategorized",
-      images: safeJson(r.images, ["https://via.placeholder.com/400"]),
+      originalPrice: r.originalPrice,
+      badge: r.badge,
+      category: r.categoryId?.slug ?? "uncategorized",
+      images: r.images ?? [],
       rating: r.rating,
       reviews: r.reviews,
-      weights: safeJson(r.weights, []),
+      weights: r.weights ?? [],
       sku: r.sku,
       inStock: r.inStock,
-      deliveryDays: "2–4",
+      deliveryDays: r.deliveryDays ?? "2–4",
     }));
 
-    return { product, related };
+    return { product, related: relatedMapped };
   } catch {
     return null;
   }
-}
-
-function safeJson(v: string | null | undefined, fallback: any) {
-  if (!v) return fallback;
-  try { return JSON.parse(v); } catch { return fallback; }
 }
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: idStr } = await params;
-  const id = parseInt(idStr, 10);
-  if (isNaN(id)) {
-    return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
+  const { id } = await params;
+
+  // Try MongoDB first (ObjectId)
+  const mongoResult = await getFromMongo(id);
+  if (mongoResult) return NextResponse.json(mongoResult);
+
+  // Fall back to static (numeric id)
+  const numericId = parseInt(id, 10);
+  if (isNaN(numericId)) {
+    return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 
-  // Try DB first
-  const dbResult = await getFromDatabase(id);
-  if (dbResult) return NextResponse.json(dbResult);
-
-  // Fall back to static
-  const product = getProductById(id);
+  const product = getProductById(numericId);
   if (!product) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
-  return NextResponse.json({ product, related: getRelatedProducts(id, 4) });
+
+  return NextResponse.json({
+    product,
+    related: getRelatedProducts(numericId, 4),
+  });
 }

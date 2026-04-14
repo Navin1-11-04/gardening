@@ -1,74 +1,65 @@
 // app/api/products/route.ts
-// ─────────────────────────────────────────────────────────────────────────────
-// Smart products API: tries Prisma DB first, falls back to static data.
-// This bridges the admin panel (which manages products via Prisma) with the
-// frontend shop pages.
-// ─────────────────────────────────────────────────────────────────────────────
+// Tries MongoDB first, falls back to static data/Product.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { getProductsByCategory, products as staticProducts } from "@/data/Product";
+import { products as staticProducts, getProductsByCategory } from "@/data/Product";
 
-// Dynamically import Prisma so it fails gracefully if DB isn't set up yet
-async function getFromDatabase(category?: string) {
+async function getFromMongo(category?: string) {
   try {
-    const { PrismaClient } = await import("@prisma/client");
-    const prisma = new PrismaClient();
+    const { connectDB } = await import("@/lib/mongodb");
+    const { Product } = await import("@/models/Product");
+    const { Category } = await import("@/models/Category");
 
-    const where = category && category !== "all"
-      ? { active: true, category: { slug: category } }
-      : { active: true };
+    await connectDB();
 
-    const dbProducts = await prisma.product.findMany({
-      where,
-      include: { category: { select: { name: true, slug: true } } },
-      orderBy: { createdAt: "desc" },
-    });
+    let query: any = { active: true };
 
-    await prisma.$disconnect();
+    if (category && category !== "all") {
+      const cat = await Category.findOne({ slug: category }).lean();
+      if (cat) query.categoryId = (cat as any)._id;
+    }
 
-    if (dbProducts.length === 0) return null; // Fall back to static
+    const dbProducts = await Product.find(query)
+      .populate("categoryId", "name slug")
+      .sort({ createdAt: -1 })
+      .lean();
 
-    // Map DB schema → frontend Product type
-    return dbProducts.map((p) => ({
-      id: p.id,
+    if (dbProducts.length === 0) return null;
+
+    return dbProducts.map((p: any) => ({
+      id: p._id.toString(),
       name: p.name,
+      nameTa: p.nameTa,
       subtitle: p.subtitle ?? "",
+      subtitleTa: p.subtitleTa,
       description: p.description,
-      highlights: safeParseJson(p.highlights, []),
-      howToUse: safeParseJson(p.howToUse, []),
+      highlights: p.highlights ?? [],
+      howToUse: p.howToUse ?? [],
       price: p.price,
-      originalPrice: p.originalPrice ?? undefined,
-      badge: p.badge ?? undefined,
-      category: p.category?.slug ?? "uncategorized",
-      images: safeParseJson(p.images, ["https://via.placeholder.com/400"]),
+      originalPrice: p.originalPrice,
+      badge: p.badge,
+      category: p.categoryId?.slug ?? "uncategorized",
+      images: p.images ?? [],
       rating: p.rating,
       reviews: p.reviews,
-      weights: safeParseJson(p.weights, []),
+      weights: p.weights ?? [],
       sku: p.sku,
       inStock: p.inStock,
-      deliveryDays: "2–4",
+      deliveryDays: p.deliveryDays ?? "2–4",
     }));
   } catch {
-    return null; // DB not available, use static
+    return null;
   }
-}
-
-function safeParseJson(value: string | null | undefined, fallback: any) {
-  if (!value) return fallback;
-  try { return JSON.parse(value); } catch { return fallback; }
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const cat = searchParams.get("cat") ?? undefined;
 
-  // Try DB first
-  const dbResult = await getFromDatabase(cat);
-  if (dbResult) {
-    return NextResponse.json(dbResult);
-  }
+  const mongoResult = await getFromMongo(cat);
+  if (mongoResult) return NextResponse.json(mongoResult);
 
-  // Fall back to static data
+  // Static fallback
   const result = cat ? getProductsByCategory(cat) : staticProducts;
   return NextResponse.json(result);
 }

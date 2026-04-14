@@ -1,22 +1,27 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { connectDB } from "@/lib/mongodb";
+import { Order } from "@/models/Order";
 
 export async function GET() {
   try {
-    const orders = await prisma.order.findMany({
-      select: {
-        id: true,
-        orderNumber: true,
-        customerName: true,
-        total: true,
-        status: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
+    await connectDB();
+    const orders = await Order.find()
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .select("orderNumber customerName total status createdAt")
+      .lean();
 
-    return NextResponse.json(orders, { status: 200 });
+    // Normalise _id → id for frontend compatibility
+    const normalised = orders.map((o: any) => ({
+      id: o._id.toString(),
+      orderNumber: o.orderNumber,
+      customerName: o.customerName,
+      total: o.total,
+      status: o.status,
+      createdAt: o.createdAt,
+    }));
+
+    return NextResponse.json(normalised, { status: 200 });
   } catch (error) {
     console.error("Fetch orders error:", error);
     return NextResponse.json(

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createToken } from "@/lib/adminAuth";
-import { prisma } from "@/lib/prisma";
+import { connectDB } from "@/lib/mongodb";
+import { Admin } from "@/models/Admin";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,9 +15,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const admin = await prisma.admin.findUnique({
-      where: { email },
-    });
+    await connectDB();
+
+    const admin = await Admin.findOne({ email: email.toLowerCase() });
 
     if (!admin || !admin.active) {
       return NextResponse.json(
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = createToken({
-      id: admin.id,
+      id: admin._id.toString(),
       email: admin.email,
       role: admin.role,
     });
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       {
         message: "Login successful",
         admin: {
-          id: admin.id,
+          id: admin._id.toString(),
           email: admin.email,
           name: admin.name,
           role: admin.role,

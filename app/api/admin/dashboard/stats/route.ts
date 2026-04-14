@@ -1,33 +1,31 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { connectDB } from "@/lib/mongodb";
+import { Product } from "@/models/Product";
+import { Order } from "@/models/Order";
+import { User } from "@/models/User";
 
 export async function GET() {
   try {
-    const [
-      totalProducts,
-      totalOrders,
-      totalCustomers,
-      totalOrdersSum,
-      lowStockProducts,
-    ] = await Promise.all([
-      prisma.product.count({ where: { active: true } }),
-      prisma.order.count(),
-      prisma.user.count({ where: { active: true } }),
-      prisma.order.aggregate({
-        _sum: { total: true },
-        where: { status: "delivered" },
-      }),
-      prisma.product.count({
-        where: { stock: { lte: 5 }, active: true },
-      }),
-    ]);
+    await connectDB();
+
+    const [totalProducts, totalOrders, totalCustomers, revenueResult, lowStockProducts] =
+      await Promise.all([
+        Product.countDocuments({ active: true }),
+        Order.countDocuments(),
+        User.countDocuments({ active: true }),
+        Order.aggregate([
+          { $match: { status: "delivered" } },
+          { $group: { _id: null, total: { $sum: "$total" } } },
+        ]),
+        Product.countDocuments({ stock: { $lte: 5 }, active: true }),
+      ]);
 
     return NextResponse.json(
       {
         totalProducts,
         totalOrders,
         totalCustomers,
-        totalRevenue: totalOrdersSum._sum.total ?? 0,
+        totalRevenue: revenueResult[0]?.total ?? 0,
         lowStockProducts,
       },
       { status: 200 }

@@ -1,25 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { connectDB } from "@/lib/mongodb";
+import { Product } from "@/models/Product";
+import { deleteImage, getPublicIdFromUrl } from "@/lib/cloudinary";
 
 // GET single product
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const product = await prisma.product.findUnique({
-      where: { id: Number(params.id) },
-      include: { category: true },
-    });
+    const { id } = await params;
+    await connectDB();
+
+    const product = await Product.findById(id)
+      .populate("categoryId", "name slug")
+      .lean();
 
     if (!product) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    return NextResponse.json(product, { status: 200 });
+    return NextResponse.json(
+      { ...(product as any), id: (product as any)._id.toString() },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch product" },
@@ -31,35 +35,43 @@ export async function GET(
 // UPDATE product
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    await connectDB();
     const data = await request.json();
 
-    const product = await prisma.product.update({
-      where: { id: Number(params.id) },
-      data: {
+    const product = await Product.findByIdAndUpdate(
+      id,
+      {
         name: data.name,
-        nameTa: data.nameTa,
-        subtitle: data.subtitle,
+        nameTa: data.nameTa || undefined,
+        subtitle: data.subtitle || undefined,
         description: data.description,
         price: Number(data.price),
-        originalPrice: data.originalPrice
-          ? Number(data.originalPrice)
-          : null,
-        categoryId: Number(data.categoryId),
+        originalPrice: data.originalPrice ? Number(data.originalPrice) : undefined,
+        categoryId: data.categoryId,
         sku: data.sku,
         stock: Number(data.stock),
-        badge: data.badge,
-        highlights: JSON.stringify(data.highlights || []),
-        weights: JSON.stringify(data.weights || []),
+        badge: data.badge || undefined,
+        highlights: data.highlights ?? [],
+        weights: data.weights ?? [],
         active: data.active,
         inStock: Number(data.stock) > 0,
+        images: data.images ?? [],
       },
-      include: { category: { select: { name: true } } },
-    });
+      { new: true, runValidators: true }
+    ).populate("categoryId", "name slug");
 
-    return NextResponse.json(product, { status: 200 });
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(
+      { ...product.toObject(), id: product._id.toString() },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Update product error:", error);
     return NextResponse.json(
@@ -69,15 +81,29 @@ export async function PUT(
   }
 }
 
-// DELETE product
+// DELETE product — also removes images from Cloudinary
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await prisma.product.delete({
-      where: { id: Number(params.id) },
-    });
+    const { id } = await params;
+    await connectDB();
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    // Delete all Cloudinary images (best-effort)
+    await Promise.allSettled(
+      product.images.map((url) => {
+        const publicId = getPublicIdFromUrl(url);
+        return publicId ? deleteImage(publicId) : Promise.resolve();
+      })
+    );
+
+    await product.deleteOne();
 
     return NextResponse.json(
       { message: "Product deleted successfully" },
