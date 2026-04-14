@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -92,7 +94,7 @@ const Skeleton = () => (
 
 export default function OrderConfirmationPage() {
   const searchParams = useSearchParams();
-  const orderId = searchParams.get("id");
+  const orderId = searchParams.get("id") ?? "";
 
   const [order, setOrder]   = useState<StoredOrder | null>(null);
   const [loaded, setLoaded] = useState(false);
