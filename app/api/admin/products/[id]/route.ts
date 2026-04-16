@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { deleteImage, getPublicIdFromUrl } from "@/lib/cloudinary";
+import { requireAdminAuth } from "@/lib/adminAuthServer";
 
-// GET single product
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminAuth();
+  if (!auth.ok) return auth.response;
+
   try {
     const { id } = await params;
     await connectDB();
@@ -24,19 +27,18 @@ export async function GET(
       { ...(product as any), id: (product as any)._id.toString() },
       { status: 200 }
     );
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch product" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
   }
 }
 
-// UPDATE product
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminAuth();
+  if (!auth.ok) return auth.response;
+
   try {
     const { id } = await params;
     await connectDB();
@@ -74,18 +76,17 @@ export async function PUT(
     );
   } catch (error) {
     console.error("Update product error:", error);
-    return NextResponse.json(
-      { error: "Failed to update product" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
   }
 }
 
-// DELETE product — also removes images from Cloudinary
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminAuth();
+  if (!auth.ok) return auth.response;
+
   try {
     const { id } = await params;
     await connectDB();
@@ -95,7 +96,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // Delete all Cloudinary images (best-effort)
     await Promise.allSettled(
       product.images.map((url) => {
         const publicId = getPublicIdFromUrl(url);
@@ -104,16 +104,9 @@ export async function DELETE(
     );
 
     await product.deleteOne();
-
-    return NextResponse.json(
-      { message: "Product deleted successfully" },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: "Product deleted successfully" }, { status: 200 });
   } catch (error) {
     console.error("Delete product error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete product" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
   }
 }
