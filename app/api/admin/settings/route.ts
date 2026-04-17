@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { requireAdminAuth } from "@/lib/adminAuthServer";
 import { Settings } from "@/models/Settings";
+import { requireAdminAuth } from "@/lib/adminAuthServer";
 
 const DEFAULTS = {
   storeName:             "Kavin Organics",
@@ -25,10 +25,9 @@ const DEFAULTS = {
 export async function GET() {
   const auth = await requireAdminAuth();
   if (!auth.ok) return auth.response;
-
   try {
     await connectDB();
-    const doc = await Settings.findOne({ key: "store" }).lean();
+    const doc   = await Settings.findOne({ key: "store" }).lean();
     const value = (doc as any)?.value ?? DEFAULTS;
     return NextResponse.json({ ...DEFAULTS, ...value });
   } catch (error) {
@@ -40,18 +39,25 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   const auth = await requireAdminAuth();
   if (!auth.ok) return auth.response;
-
   try {
     await connectDB();
-    const data = await request.json();
-
+    const data   = await request.json();
+    const merged = { ...DEFAULTS, ...data };
     await Settings.findOneAndUpdate(
       { key: "store" },
-      { $set: { value: { ...DEFAULTS, ...data } } },
+      { $set: { value: merged } },
       { upsert: true, new: true }
     );
-
-    return NextResponse.json({ message: "Settings saved successfully" });
+    const response = NextResponse.json({ message: "Settings saved successfully" });
+    // Cookie lets middleware check maintenance mode without a DB call
+    response.cookies.set("maintenance_mode", String(!!merged.maintenanceMode), {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+    });
+    return response;
   } catch (error) {
     console.error("Save settings error:", error);
     return NextResponse.json({ error: "Failed to save settings" }, { status: 500 });

@@ -1,9 +1,21 @@
-// ─── Types ────────────────────────────────────────────────────────────────────
+// lib/orderStorage.ts
+// Thin localStorage wrappers so the checkout and confirmation page
+// can share order data without a DB round-trip.
+
+export interface StoredOrderAddress {
+  name: string;
+  phone: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+}
 
 export interface StoredOrderItem {
   id: number;
   name: string;
-  variant: string;
+  variant?: string;
   price: number;
   quantity: number;
   image: string;
@@ -11,18 +23,10 @@ export interface StoredOrderItem {
 
 export interface StoredOrder {
   id: string;
-  date: string; // ISO string
-  status: "confirmed" | "packed" | "shipped" | "delivered";
+  date: string;
+  status: string;
   paymentMethod: string;
-  address: {
-    name: string;
-    phone: string;
-    line1: string;
-    line2?: string;
-    city: string;
-    state: string;
-    pincode: string;
-  };
+  address: StoredOrderAddress;
   items: StoredOrderItem[];
   subtotal: number;
   deliveryFee: number;
@@ -30,66 +34,49 @@ export interface StoredOrder {
   total: number;
 }
 
-// ─── Storage key ──────────────────────────────────────────────────────────────
+const STORAGE_KEY = "kavin_orders";
+const MAX_STORED   = 20; // keep last 20 orders only
 
-const ORDERS_KEY = "kavin_orders";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-export function getOrders(): StoredOrder[] {
+function loadAll(): StoredOrder[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
   } catch {
     return [];
   }
 }
 
-export function saveOrder(order: StoredOrder): void {
+function saveAll(orders: StoredOrder[]) {
   if (typeof window === "undefined") return;
   try {
-    const existing = getOrders();
-    // Newest first
-    localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...existing]));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders.slice(0, MAX_STORED)));
   } catch {
-    // ignore storage errors
+    // localStorage might be full — ignore
   }
 }
 
+/** Persist a new order. Safe to call server-side (no-op). */
+export function saveOrder(order: StoredOrder) {
+  const all = loadAll().filter((o) => o.id !== order.id);
+  saveAll([order, ...all]);
+}
+
+/** Retrieve a single order by ID. Returns null if not found. */
+export function getOrder(id: string): StoredOrder | null {
+  return loadAll().find((o) => o.id === id) ?? null;
+}
+
+/** Retrieve all stored orders (most recent first). */
+export function getAllOrders(): StoredOrder[] {
+  return loadAll();
+}
+
+/** Generate a unique order ID like KO-20250417-A3F2 */
 export function generateOrderId(): string {
-  const year = new Date().getFullYear();
-  const rand = Math.floor(10000 + Math.random() * 89999);
-  return `KO-${year}-${rand}`;
-}
-
-export function formatOrderDate(isoString: string): string {
-  return new Date(isoString).toLocaleDateString("en-IN", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-export function statusLabel(status: StoredOrder["status"]): string {
-  const map: Record<StoredOrder["status"], string> = {
-    confirmed: "Order Confirmed",
-    packed: "Being Packed",
-    shipped: "Out for Delivery",
-    delivered: "Delivered",
-  };
-  return map[status];
-}
-
-export function statusColor(status: StoredOrder["status"]): string {
-  const map: Record<StoredOrder["status"], string> = {
-    confirmed: "bg-[#fff8ee] text-[#7a5c1e] border-[#f0d080]",
-    packed: "bg-[#eef5ea] text-[#3d6b35] border-[#b8d4a0]",
-    shipped: "bg-[#e8f0fb] text-[#1a4d8a] border-[#a8c0e8]",
-    delivered: "bg-[#eef5ea] text-[#2e5228] border-[#7ec856]",
-  };
-  return map[status];
+  const date = new Date()
+    .toISOString()
+    .slice(0, 10)
+    .replace(/-/g, "");
+  const rand = Math.random().toString(36).toUpperCase().slice(2, 6);
+  return `KO-${date}-${rand}`;
 }

@@ -11,6 +11,7 @@ const navLinks = [
   { label: "Shop",      href: "/shop" },
   { label: "Guides",    href: "/guides" },
   { label: "My Orders", href: "/orders" },
+  {label:"Track Orders",href:"/track-order"},
   { label: "Contact",   href: "/contact" },
 ];
 

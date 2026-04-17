@@ -1,24 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
-  Phone,
-  MessageSquare,
-  Mail,
-  MapPin,
-  Clock,
-  ChevronRight,
-  Send,
-  Check,
-  Leaf,
+  Phone, Mail, MapPin, Clock, Send, CheckCircle2,
+  ChevronRight, MessageSquare,
 } from "lucide-react";
+import Link from "next/link";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type FormState = "idle" | "submitting" | "success" | "error";
-
-interface FormData {
+interface FormState {
   name: string;
   phone: string;
   email: string;
@@ -26,446 +15,265 @@ interface FormData {
   message: string;
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+const EMPTY: FormState = { name: "", phone: "", email: "", subject: "", message: "" };
 
-const contactChannels = [
-  {
-    id: "phone",
-    icon: Phone,
-    label: "Call Us",
-    value: "+91 98765 43210",
-    subtext: "Talk to a garden expert directly",
-    action: "tel:+919876543210",
-    actionLabel: "Call Now",
-    bg: "#eef5ea",
-    border: "#b8d4a0",
-    iconBg: "#3d6b35",
-    iconColor: "white",
-    priority: true,
-  },
-  {
-    id: "whatsapp",
-    icon: MessageSquare,
-    label: "WhatsApp",
-    value: "+91 98765 43210",
-    subtext: "Send us a message anytime",
-    action: "https://wa.me/919876543210",
-    actionLabel: "Open WhatsApp",
-    bg: "#e8f5ee",
-    border: "#86d4a8",
-    iconBg: "#25a244",
-    iconColor: "white",
-    priority: true,
-  },
-  {
-    id: "email",
-    icon: Mail,
-    label: "Email Us",
-    value: "hello@kavinorganics.in",
-    subtext: "We reply within 24 hours",
-    action: "mailto:hello@kavinorganics.in",
-    actionLabel: "Send Email",
-    bg: "#faf7f2",
-    border: "#d4c9a8",
-    iconBg: "#7a5c1e",
-    iconColor: "white",
-    priority: false,
-  },
-];
-
-const businessHours = [
-  { day: "Monday – Friday", hours: "9:00 AM – 6:00 PM", open: true },
-  { day: "Saturday", hours: "9:00 AM – 4:00 PM", open: true },
-  { day: "Sunday", hours: "Closed", open: false },
-];
-
-const subjectOptions = [
-  "Question about a product",
-  "Help with my order",
-  "Delivery & shipping",
-  "Returns & refunds",
-  "Gardening advice",
+const SUBJECTS = [
+  "Product enquiry",
+  "Order status",
   "Bulk / wholesale order",
+  "Gardening advice",
+  "Delivery enquiry",
   "Other",
 ];
 
-// ─── Field Component ──────────────────────────────────────────────────────────
-
-const Field = ({
-  label,
-  required,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) => (
-  <div className="flex flex-col gap-2">
-    <label className="text-base font-bold text-[#2a2a1e]">
-      {label}
-      {required && <span className="text-[#c0392b] ml-1">*</span>}
-    </label>
-    {children}
-  </div>
-);
-
-const inputClass =
-  "w-full bg-white border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3.5 text-base text-[#2a2a1e] placeholder:text-[#b0a890] outline-none transition-colors";
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 export default function ContactPage() {
-  const [form, setForm] = useState<FormData>({
-    name: "",
-    phone: "",
-    email: "",
-    subject: subjectOptions[0],
-    message: "",
-  });
-  const [formState, setFormState] = useState<FormState>("idle");
+  const [form,     setForm]     = useState<FormState>(EMPTY);
+  const [loading,  setLoading]  = useState(false);
+  const [success,  setSuccess]  = useState(false);
+  const [error,    setError]    = useState("");
 
-  const set = (k: keyof FormData) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  const isValid = form.name.trim() && form.phone.trim() && form.message.trim();
+  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm((p) => ({ ...p, [k]: e.target.value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid) return;
-    setFormState("submitting");
-    // Simulate API call — replace with real endpoint
-    await new Promise((r) => setTimeout(r, 1500));
-    setFormState("success");
+    if (!form.name.trim() || !form.phone.trim() || !form.message.trim()) {
+      setError("Please fill in your name, phone and message.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed to send. Please try again."); return; }
+      setSuccess(true);
+      setForm(EMPTY);
+    } catch {
+      setError("Network error. Please try again or call us directly.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#faf7f2]">
-
-      {/* ── Breadcrumb ─────────────────────────────── */}
+      {/* Breadcrumb */}
       <div className="bg-white border-b border-[#e8e0d0]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-2 text-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-2 text-sm">
           <Link href="/" className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors">Home</Link>
-          <ChevronRight size={14} className="text-[#b0a890]" />
+          <ChevronRight size={13} className="text-[#b0a890]" />
           <span className="text-[#2a2a1e] font-medium">Contact Us</span>
         </div>
       </div>
 
-      {/* ── Hero ───────────────────────────────────── */}
-      <div className="bg-[#3d6b35] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <Leaf size={20} className="text-white" />
-            </div>
-            <p className="text-white/70 text-sm font-semibold uppercase tracking-wider">Get in Touch</p>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black font-outfit leading-tight mb-4">
-            We're Here to Help
-          </h1>
-          <p className="text-lg sm:text-xl text-white/80 max-w-2xl leading-relaxed">
-            Whether you have a question about a product, need gardening advice, or want help with your order — our friendly team is just a call or message away.
+      {/* Hero */}
+      <div className="bg-[#1e3d18] py-14 px-4 text-center relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#3d6b35] opacity-20 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#7ab648] opacity-10 rounded-full translate-y-1/2 -translate-x-1/2" />
+        </div>
+        <div className="relative max-w-2xl mx-auto">
+          <h1 className="text-3xl sm:text-4xl font-black text-white mb-3">Get in Touch 🌿</h1>
+          <p className="text-[#a0c890] text-base leading-relaxed">
+            Have a question about our products or your order? We're here to help. Most queries are answered within a few hours.
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 items-start">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
 
-          {/* ── LEFT COLUMN (contact channels + hours + map) ── */}
-          <div className="lg:col-span-2 flex flex-col gap-6">
-
-            {/* Contact channels */}
-            <div>
-              <h2 className="text-xl font-bold text-[#2a2a1e] mb-4">Reach Us Directly</h2>
-              <div className="flex flex-col gap-4">
-                {contactChannels.map((ch) => {
-                  const Icon = ch.icon;
-                  return (
-                    <div
-                      key={ch.id}
-                      className="rounded-2xl border-2 p-5 transition-all duration-200"
-                      style={{ backgroundColor: ch.bg, borderColor: ch.border }}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: ch.iconBg }}
-                        >
-                          <Icon size={22} color={ch.iconColor} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-[#7a7a68] uppercase tracking-wide mb-0.5">
-                            {ch.label}
-                          </p>
-                          <p className="text-xl font-black text-[#2a2a1e] leading-tight">
-                            {ch.value}
-                          </p>
-                          <p className="text-sm text-[#5a5a48] mt-1">{ch.subtext}</p>
-                        </div>
-                      </div>
-                      <a
-                        href={ch.action}
-                        target={ch.id === "whatsapp" ? "_blank" : undefined}
-                        rel={ch.id === "whatsapp" ? "noopener noreferrer" : undefined}
-                        className="mt-4 w-full flex items-center justify-center gap-2 font-bold text-base py-3 rounded-xl transition-all active:scale-[.98]"
-                        style={{
-                          backgroundColor: ch.iconBg,
-                          color: ch.iconColor,
-                        }}
-                      >
-                        <Icon size={18} />
-                        {ch.actionLabel}
-                      </a>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Business Hours */}
-            <div className="bg-white rounded-2xl border border-[#e8e0d0] p-5 sm:p-6">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-[#eef5ea] flex items-center justify-center shrink-0">
-                  <Clock size={20} className="text-[#3d6b35]" />
+          {/* ── LEFT: Contact Form ── */}
+          <div className="flex-1 min-w-0">
+            {success ? (
+              <div className="bg-white rounded-2xl border border-[#e8e0d0] p-10 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#eef5ea] rounded-full mb-5">
+                  <CheckCircle2 size={32} className="text-[#3d6b35]" />
                 </div>
-                <h2 className="text-lg font-bold text-[#2a2a1e]">Business Hours</h2>
+                <h2 className="text-2xl font-bold text-[#2a2a1e] mb-3">Message Received!</h2>
+                <p className="text-[#5a5a48] text-base leading-relaxed mb-6">
+                  Thank you for reaching out. We'll get back to you on WhatsApp or phone within a few hours.
+                </p>
+                <button
+                  onClick={() => setSuccess(false)}
+                  className="bg-[#3d6b35] hover:bg-[#2e5228] text-white font-bold px-6 py-3 rounded-xl transition-all"
+                >
+                  Send Another Message
+                </button>
               </div>
-              <div className="flex flex-col gap-3">
-                {businessHours.map(({ day, hours, open }) => (
-                  <div
-                    key={day}
-                    className="flex items-center justify-between gap-4 py-3 border-b border-[#f0ece4] last:border-0"
-                  >
-                    <span className="text-base font-semibold text-[#3a3a2e]">{day}</span>
-                    <span
-                      className={`text-base font-bold ${
-                        open ? "text-[#3d6b35]" : "text-[#c0392b]"
-                      }`}
-                    >
-                      {hours}
-                    </span>
+            ) : (
+              <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#e8e0d0] p-6 sm:p-8 flex flex-col gap-5">
+                <h2 className="text-xl font-bold text-[#2a2a1e]">Send us a message</h2>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 font-medium">
+                    {error}
                   </div>
-                ))}
-              </div>
-              <div className="mt-4 flex items-center gap-2 bg-[#eef5ea] border border-[#b8d4a0] rounded-xl px-4 py-3">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#3d6b35] animate-pulse shrink-0" />
-                <p className="text-sm font-semibold text-[#3d6b35]">
-                  We're open right now — call us!
-                </p>
-              </div>
-            </div>
+                )}
 
-            {/* Store Address */}
-            <div className="bg-white rounded-2xl border border-[#e8e0d0] p-5 sm:p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-[#eef5ea] flex items-center justify-center shrink-0">
-                  <MapPin size={20} className="text-[#3d6b35]" />
-                </div>
-                <h2 className="text-lg font-bold text-[#2a2a1e]">Our Store</h2>
-              </div>
-              <p className="text-base font-bold text-[#2a2a1e]">Kavin Organics</p>
-              <p className="text-sm text-[#5a5a48] mt-1 leading-relaxed">
-                No. 45, Market Road,<br />
-                Thiruchengode — 637211,<br />
-                Namakkal District, Tamil Nadu
-              </p>
-              <a
-                href="https://maps.google.com/?q=Thiruchengode,Tamil+Nadu"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 flex items-center justify-center gap-2 bg-[#faf7f2] hover:bg-[#eef5ea] border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#3d6b35] font-bold text-sm py-3 rounded-xl transition-all"
-              >
-                <MapPin size={16} />
-                View on Google Maps
-              </a>
-
-              {/* Static map placeholder — replace with real embed */}
-              <div className="mt-4 rounded-xl overflow-hidden border border-[#e8e0d0] bg-[#f0ece4] h-40 flex items-center justify-center">
-                <iframe
-                  title="Kavin Organics location"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d31385.78!2d77.893!3d11.476!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba9f0e5c3a3b3b3%3A0x1!2sThiruchengode%2C+Tamil+Nadu!5e0!3m2!1sen!2sin!4v1"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  className="w-full h-full"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* ── RIGHT COLUMN (inquiry form) ──────────── */}
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl border border-[#e8e0d0] overflow-hidden">
-              {/* Form header */}
-              <div className="bg-[#3d6b35] px-6 py-5">
-                <h2 className="text-xl font-bold text-white">Send Us a Message</h2>
-                <p className="text-white/75 text-sm mt-1">
-                  Fill in the form below and we'll get back to you within 24 hours.
-                </p>
-              </div>
-
-              {formState === "success" ? (
-                /* Success state */
-                <div className="p-8 sm:p-10 flex flex-col items-center text-center gap-5">
-                  <div className="w-20 h-20 rounded-full bg-[#eef5ea] border-2 border-[#b8d4a0] flex items-center justify-center">
-                    <Check size={36} className="text-[#3d6b35]" strokeWidth={2.5} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">
+                      Full Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text" value={form.name} onChange={set("name")}
+                      placeholder="e.g. Meenakshi Rajan"
+                      className="w-full bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3 text-sm outline-none transition-colors"
+                    />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-[#2a2a1e] mb-2">Message Sent!</h3>
-                    <p className="text-base text-[#5a5a48] leading-relaxed max-w-sm">
-                      Thank you, {form.name.split(" ")[0] || "friend"}! We've received your message and will get back to you within 24 hours.
-                    </p>
-                  </div>
-                  <div className="bg-[#faf7f2] border border-[#d4c9a8] rounded-2xl p-4 w-full max-w-sm text-left">
-                    <p className="text-sm font-bold text-[#2a2a1e] mb-1">Need a faster response?</p>
-                    <p className="text-sm text-[#5a5a48]">Call or WhatsApp us at</p>
-                    <a href="tel:+919876543210" className="text-lg font-black text-[#3d6b35] hover:underline">
-                      +91 98765 43210
-                    </a>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setFormState("idle");
-                      setForm({ name: "", phone: "", email: "", subject: subjectOptions[0], message: "" });
-                    }}
-                    className="text-sm font-semibold text-[#3d6b35] hover:underline"
-                  >
-                    Send another message
-                  </button>
-                </div>
-              ) : (
-                /* Form */
-                <form onSubmit={handleSubmit} className="p-5 sm:p-6 flex flex-col gap-5">
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <Field label="Your Name" required>
-                      <input
-                        type="text"
-                        className={inputClass}
-                        placeholder="e.g. Meenakshi Rajan"
-                        value={form.name}
-                        onChange={set("name")}
-                      />
-                    </Field>
-                    <Field label="Phone Number" required>
-                      <input
-                        type="tel"
-                        className={inputClass}
-                        placeholder="e.g. 98765 43210"
-                        value={form.phone}
-                        onChange={set("phone")}
-                      />
-                    </Field>
-                  </div>
-
-                  <Field label="Email Address">
+                    <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
                     <input
-                      type="email"
-                      className={inputClass}
-                      placeholder="your@email.com (optional)"
-                      value={form.email}
-                      onChange={set("email")}
+                      type="tel" value={form.phone} onChange={set("phone")}
+                      placeholder="e.g. 98765 43210"
+                      className="w-full bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3 text-sm outline-none transition-colors"
                     />
-                  </Field>
-
-                  <Field label="What is your question about?" required>
-                    <div className="relative">
-                      <select
-                        className={`${inputClass} appearance-none pr-10 cursor-pointer`}
-                        value={form.subject}
-                        onChange={set("subject")}
-                      >
-                        {subjectOptions.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                      <ChevronRight
-                        size={18}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 rotate-90 text-[#7a7a68] pointer-events-none"
-                      />
-                    </div>
-                  </Field>
-
-                  <Field label="Your Message" required>
-                    <textarea
-                      className={`${inputClass} resize-none`}
-                      rows={5}
-                      placeholder="Tell us how we can help you. Please be as detailed as you like — the more you share, the better we can assist you."
-                      value={form.message}
-                      onChange={set("message")}
-                    />
-                  </Field>
-
-                  {/* Tip box */}
-                  <div className="flex items-start gap-3 bg-[#faf7f2] border border-[#d4c9a8] rounded-xl p-4">
-                    <span className="text-xl shrink-0">💡</span>
-                    <p className="text-sm text-[#5a5a48] leading-relaxed">
-                      <span className="font-bold text-[#2a2a1e]">Prefer to speak to someone? </span>
-                      Call us at <a href="tel:+919876543210" className="font-bold text-[#3d6b35] hover:underline">+91 98765 43210</a> — we're happy to help over the phone.
-                    </p>
                   </div>
+                </div>
 
-                  <button
-                    type="submit"
-                    disabled={!isValid || formState === "submitting"}
-                    className={`w-full flex items-center justify-center gap-3 font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md ${
-                      !isValid
-                        ? "bg-[#a8c890] text-white cursor-not-allowed"
-                        : formState === "submitting"
-                          ? "bg-[#3d6b35] text-white opacity-80 cursor-wait"
-                          : "bg-[#3d6b35] hover:bg-[#2e5228] text-white"
-                    }`}
+                <div>
+                  <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">Email (optional)</label>
+                  <input
+                    type="email" value={form.email} onChange={set("email")}
+                    placeholder="your@email.com"
+                    className="w-full bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3 text-sm outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">Subject</label>
+                  <select
+                    value={form.subject} onChange={set("subject")}
+                    className="w-full bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3 text-sm outline-none transition-colors"
                   >
-                    {formState === "submitting" ? (
-                      <>
-                        <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                        Sending your message…
-                      </>
-                    ) : (
-                      <>
-                        <Send size={20} />
-                        Send Message
-                      </>
-                    )}
-                  </button>
+                    <option value="">Select a subject…</option>
+                    {SUBJECTS.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
 
-                  <p className="text-xs text-[#a8a090] text-center">
-                    Your information is kept private and will only be used to respond to your enquiry.
-                  </p>
-                </form>
-              )}
+                <div>
+                  <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">
+                    Message <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={form.message} onChange={set("message")}
+                    placeholder="Tell us what you need help with…"
+                    rows={5}
+                    className="w-full bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3 text-sm outline-none transition-colors resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] text-white font-bold py-4 rounded-xl transition-all shadow-md"
+                >
+                  {loading ? (
+                    <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Sending…</>
+                  ) : (
+                    <><Send size={18} />Send Message</>
+                  )}
+                </button>
+
+                <p className="text-xs text-center text-[#a8a090]">
+                  Prefer to talk? Call us directly — <a href="tel:+919876543210" className="text-[#3d6b35] font-semibold">+91 98765 43210</a>
+                </p>
+              </form>
+            )}
+          </div>
+
+          {/* ── RIGHT: Contact Info ── */}
+          <div className="w-full lg:w-80 shrink-0 flex flex-col gap-4">
+            {/* Quick contact */}
+            <div className="bg-[#1e3d18] rounded-2xl p-6 text-white">
+              <h3 className="text-base font-bold mb-4 text-[#a0d878]">Quick Contact</h3>
+
+              <a href="tel:+919876543210" className="flex items-center gap-3 mb-4 group">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-colors">
+                  <Phone size={18} className="text-[#7ab648]" />
+                </div>
+                <div>
+                  <p className="text-xs text-white/50">Phone / WhatsApp</p>
+                  <p className="text-sm font-bold text-white">+91 98765 43210</p>
+                </div>
+              </a>
+
+              <a href="mailto:hello@kavinorganics.in" className="flex items-center gap-3 mb-4 group">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-colors">
+                  <Mail size={18} className="text-[#7ab648]" />
+                </div>
+                <div>
+                  <p className="text-xs text-white/50">Email</p>
+                  <p className="text-sm font-bold text-white">hello@kavinorganics.in</p>
+                </div>
+              </a>
+
+              <a
+                href="https://wa.me/919876543210?text=Hi%2C%20I%20have%20a%20question%20about%20Kavin%20Organics"
+                target="_blank" rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-[#25d366] hover:bg-[#20bc59] text-white font-bold py-3 rounded-xl transition-all text-sm mt-2"
+              >
+                <MessageSquare size={16} />Chat on WhatsApp
+              </a>
             </div>
 
-            {/* Quick links below form */}
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                { label: "Frequently Asked Questions", href: "/faq", desc: "Quick answers to common questions", icon: "❓" },
-                { label: "Shipping & Delivery", href: "/shipping", desc: "Delivery times, charges & areas", icon: "🚚" },
-                { label: "Returns & Refunds", href: "/returns", desc: "Our easy 7-day return policy", icon: "↩️" },
-                { label: "Browse Products", href: "/shop", desc: "Seeds, pots, fertilizers & more", icon: "🌿" },
-              ].map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="flex items-start gap-4 bg-white rounded-2xl border border-[#e8e0d0] hover:border-[#b8d4a0] hover:shadow-sm p-4 transition-all group"
-                >
-                  <span className="text-2xl shrink-0">{link.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#2a2a1e] group-hover:text-[#3d6b35] transition-colors">
-                      {link.label}
-                    </p>
-                    <p className="text-xs text-[#7a7a68] mt-0.5">{link.desc}</p>
+            {/* Address & Hours */}
+            <div className="bg-white rounded-2xl border border-[#e8e0d0] p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-9 h-9 bg-[#eef5ea] rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                  <MapPin size={16} className="text-[#3d6b35]" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#1e3d18] uppercase tracking-wide mb-0.5">Store Address</p>
+                  <p className="text-sm text-[#5a5a48] leading-relaxed">
+                    No. 45, Market Road,<br />
+                    Thiruchengode — 637211<br />
+                    Namakkal District, Tamil Nadu
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 bg-[#eef5ea] rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                  <Clock size={16} className="text-[#3d6b35]" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#1e3d18] uppercase tracking-wide mb-1">Business Hours</p>
+                  <div className="text-sm text-[#5a5a48] space-y-0.5">
+                    <div className="flex justify-between gap-4">
+                      <span>Mon – Fri</span><span className="font-semibold text-[#2a2a1e]">9am – 6pm</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span>Saturday</span><span className="font-semibold text-[#2a2a1e]">9am – 4pm</span>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span>Sunday</span><span className="font-semibold text-red-500">Closed</span>
+                    </div>
                   </div>
-                  <ChevronRight size={16} className="text-[#b0a890] shrink-0 mt-0.5 group-hover:text-[#3d6b35] transition-colors" />
-                </Link>
-              ))}
+                </div>
+              </div>
+            </div>
+
+            {/* FAQ hint */}
+            <div className="bg-[#fff8ee] border border-[#f0d080] rounded-2xl px-5 py-4 text-sm text-[#7a5c1e]">
+              <p className="font-bold mb-1">💡 Common questions</p>
+              <ul className="space-y-1 text-xs leading-relaxed">
+                <li>• Orders are delivered in 2–4 business days</li>
+                <li>• Free delivery on orders above ₹999</li>
+                <li>• WhatsApp us for bulk / wholesale pricing</li>
+                <li>• We ship across all of Tamil Nadu</li>
+              </ul>
             </div>
           </div>
         </div>

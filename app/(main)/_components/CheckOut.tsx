@@ -5,60 +5,35 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ChevronRight,
-  MapPin,
-  CreditCard,
-  CheckCircle2,
-  Plus,
-  Truck,
-  ShieldCheck,
-  Phone,
-  Pencil,
-  Check,
-  Wallet,
-  Smartphone,
-  Building2,
+  ChevronRight, MapPin, CreditCard, CheckCircle2, Plus,
+  Truck, ShieldCheck, Phone, Pencil, Check,
+  Wallet, Smartphone, Building2,
 } from "lucide-react";
 import { useCart } from "../_context/CartContext";
 import { saveOrder, generateOrderId } from "@/lib/orderStorage";
+import { useStoreConfig } from "@/lib/useStoreConfig";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Step = "address" | "payment" | "review";
 
 interface Address {
-  fullName: string;
-  phone: string;
-  pincode: string;
-  addressLine1: string;
-  addressLine2: string;
-  city: string;
-  state: string;
-  type: "Home" | "Work" | "Other";
+  fullName: string; phone: string; pincode: string;
+  addressLine1: string; addressLine2: string;
+  city: string; state: string; type: "Home" | "Work" | "Other";
 }
 
 interface PaymentMethod {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  desc: string;
+  id: string; label: string; icon: React.ReactNode; desc: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const FREE_DELIVERY_THRESHOLD = 999;
-const DELIVERY_FEE = 79;
-
 const savedAddresses: Address[] = [
   {
-    fullName: "Meenakshi Rajan",
-    phone: "98765 43210",
-    pincode: "637501",
-    addressLine1: "No. 12, Gandhi Nagar",
-    addressLine2: "Near Tamil Nadu Bank",
-    city: "Namakkal",
-    state: "Tamil Nadu",
-    type: "Home",
+    fullName: "Meenakshi Rajan", phone: "98765 43210", pincode: "637501",
+    addressLine1: "No. 12, Gandhi Nagar", addressLine2: "Near Tamil Nadu Bank",
+    city: "Namakkal", state: "Tamil Nadu", type: "Home",
   },
 ];
 
@@ -75,15 +50,14 @@ const STEPS: { id: Step; label: string }[] = [
   { id: "review",  label: "Review & Place Order" },
 ];
 
-// ─── Step Progress Bar ────────────────────────────────────────────────────────
+// ─── Step Bar ─────────────────────────────────────────────────────────────────
 
 const StepBar = ({ current }: { current: Step }) => {
   const idx = STEPS.findIndex((s) => s.id === current);
   return (
     <div className="flex items-center justify-center gap-0 mb-8 sm:mb-10 overflow-x-auto">
       {STEPS.map((step, i) => {
-        const done   = i < idx;
-        const active = i === idx;
+        const done = i < idx; const active = i === idx;
         return (
           <div key={step.id} className="flex items-center">
             <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm sm:text-base font-bold transition-all ${
@@ -110,7 +84,7 @@ const StepBar = ({ current }: { current: Step }) => {
   );
 };
 
-// ─── Field Component ──────────────────────────────────────────────────────────
+// ─── Field ────────────────────────────────────────────────────────────────────
 
 const Field = ({
   label, value, onChange, placeholder, type = "text", required = false,
@@ -123,9 +97,7 @@ const Field = ({
       {label}{required && <span className="text-[#c0392b] ml-1">*</span>}
     </label>
     <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
+      type={type} value={value} onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       className="w-full bg-white border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3.5 text-base text-[#2a2a1e] placeholder:text-[#b0a890] outline-none transition-colors"
     />
@@ -137,16 +109,13 @@ const Field = ({
 const AddressStep = ({
   onNext, selected, setSelected, newAddressForm, setNewAddressForm,
 }: {
-  onNext: () => void;
-  selected: number | "new";
-  setSelected: (v: number | "new") => void;
-  newAddressForm: Address;
-  setNewAddressForm: (v: Address) => void;
+  onNext: () => void; selected: number | "new"; setSelected: (v: number | "new") => void;
+  newAddressForm: Address; setNewAddressForm: (v: Address) => void;
 }) => {
   const set = (k: keyof Address) => (v: string) =>
     setNewAddressForm({ ...newAddressForm, [k]: v });
 
-  const isFormValid =
+  const isValid =
     selected !== "new" ||
     (newAddressForm.fullName && newAddressForm.phone && newAddressForm.pincode &&
      newAddressForm.addressLine1 && newAddressForm.city && newAddressForm.state);
@@ -206,8 +175,8 @@ const AddressStep = ({
       {selected === "new" && (
         <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5 sm:p-6 flex flex-col gap-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field label="Full Name"     value={newAddressForm.fullName}     onChange={set("fullName")}     placeholder="e.g. Meenakshi Rajan"  required />
-            <Field label="Phone Number"  value={newAddressForm.phone}        onChange={set("phone")}        placeholder="e.g. 98765 43210"      type="tel" required />
+            <Field label="Full Name"    value={newAddressForm.fullName}     onChange={set("fullName")}     placeholder="e.g. Meenakshi Rajan"  required />
+            <Field label="Phone Number" value={newAddressForm.phone}        onChange={set("phone")}        placeholder="e.g. 98765 43210"      type="tel" required />
           </div>
           <Field label="Address Line 1" value={newAddressForm.addressLine1} onChange={set("addressLine1")} placeholder="House no., Street, Area" required />
           <Field label="Address Line 2" value={newAddressForm.addressLine2} onChange={set("addressLine2")} placeholder="Landmark (optional)" />
@@ -233,7 +202,7 @@ const AddressStep = ({
         </div>
       )}
 
-      <button onClick={onNext} disabled={!isFormValid}
+      <button onClick={onNext} disabled={!isValid}
         className="w-full flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md"
       >
         Continue to Payment <ChevronRight size={22} />
@@ -245,28 +214,35 @@ const AddressStep = ({
 // ─── Payment Step ─────────────────────────────────────────────────────────────
 
 const PaymentStep = ({
-  onNext, onBack, selected, setSelected, total,
+  onNext, onBack, selected, setSelected, total, allowCOD, allowUPI, allowCard,
 }: {
-  onNext: () => void; onBack: () => void;
-  selected: string; setSelected: (v: string) => void;
-  total: number;
+  onNext: () => void; onBack: () => void; selected: string; setSelected: (v: string) => void;
+  total: number; allowCOD: boolean; allowUPI: boolean; allowCard: boolean;
 }) => {
-  const [upiId,    setUpiId]    = useState("");
-  const [cardNum,  setCardNum]  = useState("");
+  const [upiId, setUpiId]       = useState("");
+  const [cardNum, setCardNum]   = useState("");
   const [cardName, setCardName] = useState("");
-  const [expiry,   setExpiry]   = useState("");
-  const [cvv,      setCvv]      = useState("");
+  const [expiry, setExpiry]     = useState("");
+  const [cvv, setCvv]           = useState("");
+
+  // Filter methods based on settings
+  const availableMethods = paymentMethods.filter((m) => {
+    if (m.id === "cod" && !allowCOD) return false;
+    if (m.id === "upi" && !allowUPI) return false;
+    if (m.id === "card" && !allowCard) return false;
+    return true;
+  });
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <p className="text-sm font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">Step 2</p>
         <h2 className="text-2xl sm:text-3xl font-bold text-[#2a2a1e] font-outfit">Payment Method</h2>
-        <p className="text-base text-[#7a7a68] mt-1">Choose how you'd like to pay for your order.</p>
+        <p className="text-base text-[#7a7a68] mt-1">Choose how you'd like to pay.</p>
       </div>
 
       <div className="flex flex-col gap-3">
-        {paymentMethods.map((method) => (
+        {availableMethods.map((method) => (
           <div key={method.id}>
             <button onClick={() => setSelected(method.id)}
               className={`w-full flex items-center gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all text-left ${
@@ -305,7 +281,6 @@ const PaymentStep = ({
                     Verify
                   </button>
                 </div>
-                <p className="text-xs text-[#7a7a68] mt-2">e.g. 9876543210@paytm or name@oksbi</p>
               </div>
             )}
 
@@ -339,14 +314,10 @@ const PaymentStep = ({
       <div className="flex flex-col sm:flex-row gap-3">
         <button onClick={onBack}
           className="sm:w-40 flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all"
-        >
-          ← Back
-        </button>
+        >← Back</button>
         <button onClick={onNext} disabled={!selected}
           className="flex-1 flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md"
-        >
-          Review Order <ChevronRight size={22} />
-        </button>
+        >Review Order <ChevronRight size={22} /></button>
       </div>
     </div>
   );
@@ -355,11 +326,10 @@ const PaymentStep = ({
 // ─── Review Step ──────────────────────────────────────────────────────────────
 
 const ReviewStep = ({
-  onPlace, onBack, paymentMethod, subtotal, deliveryFee, total, address,
+  onPlace, onBack, paymentMethod, subtotal, deliveryFee, total, address, placing,
 }: {
   onPlace: () => void; onBack: () => void; paymentMethod: string;
-  subtotal: number; deliveryFee: number; total: number;
-  address: Address;
+  subtotal: number; deliveryFee: number; total: number; address: Address; placing: boolean;
 }) => {
   const { items } = useCart();
   const pm = paymentMethods.find((p) => p.id === paymentMethod);
@@ -384,12 +354,10 @@ const ReviewStep = ({
         </div>
         <p className="text-base font-bold text-[#2a2a1e]">{address.fullName} · 📞 {address.phone}</p>
         <p className="text-sm text-[#5a5a48] mt-1 leading-snug">
-          {address.addressLine1}
-          {address.addressLine2 ? `, ${address.addressLine2}` : ""}, {address.city}, {address.state} — {address.pincode}
+          {address.addressLine1}{address.addressLine2 ? `, ${address.addressLine2}` : ""}, {address.city}, {address.state} — {address.pincode}
         </p>
         <div className="flex items-center gap-2 mt-3 text-sm text-[#3d6b35] bg-[#eef5ea] px-3 py-2 rounded-xl w-fit font-semibold">
-          <Truck size={15} />
-          Estimated delivery: 2–4 business days
+          <Truck size={15} />Estimated delivery: 2–4 business days
         </div>
       </div>
 
@@ -404,9 +372,7 @@ const ReviewStep = ({
           </button>
         </div>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#eef5ea] flex items-center justify-center text-[#3d6b35]">
-            {pm?.icon}
-          </div>
+          <div className="w-10 h-10 rounded-xl bg-[#eef5ea] flex items-center justify-center text-[#3d6b35]">{pm?.icon}</div>
           <div>
             <p className="text-base font-bold text-[#2a2a1e]">{pm?.label}</p>
             <p className="text-sm text-[#7a7a68]">{pm?.desc}</p>
@@ -458,16 +424,17 @@ const ReviewStep = ({
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <button onClick={onBack}
-          className="sm:w-40 flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all"
+        <button onClick={onBack} disabled={placing}
+          className="sm:w-40 flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all disabled:opacity-50"
+        >← Back</button>
+        <button onClick={onPlace} disabled={placing}
+          className="flex-1 flex items-center justify-center gap-3 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] text-white font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md"
         >
-          ← Back
-        </button>
-        <button onClick={onPlace}
-          className="flex-1 flex items-center justify-center gap-3 bg-[#3d6b35] hover:bg-[#2e5228] text-white font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md"
-        >
-          <CheckCircle2 size={24} />
-          Place Order — ₹{total.toLocaleString("en-IN")}
+          {placing ? (
+            <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Placing Order…</>
+          ) : (
+            <><CheckCircle2 size={24} />Place Order — ₹{total.toLocaleString("en-IN")}</>
+          )}
         </button>
       </div>
     </div>
@@ -521,7 +488,6 @@ const OrderSummary = ({
         </div>
       </div>
     </div>
-
     <div className="bg-[#faf7f2] border border-[#d4c9a8] rounded-2xl px-5 py-4 flex items-start gap-3">
       <Phone size={20} className="text-[#3d6b35] shrink-0 mt-0.5" />
       <div>
@@ -532,7 +498,6 @@ const OrderSummary = ({
         <p className="text-xs text-[#7a7a68] mt-0.5">Mon–Sat, 9am–6pm</p>
       </div>
     </div>
-
     <div className="flex items-center justify-center gap-2 text-sm text-[#7a7a68]">
       <ShieldCheck size={16} className="text-[#3d6b35]" />
       100% secure & encrypted checkout
@@ -550,23 +515,29 @@ const EMPTY_ADDRESS: Address = {
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
+  const { config } = useStoreConfig();   // ← dynamic from DB
+
+  const FREE_DELIVERY_THRESHOLD = config.freeDeliveryThreshold;
+  const DELIVERY_FEE            = config.deliveryFee;
 
   const [step,            setStep]            = useState<Step>("address");
   const [selectedAddress, setSelectedAddress] = useState<number | "new">(0);
   const [newAddressForm,  setNewAddressForm]  = useState<Address>(EMPTY_ADDRESS);
   const [selectedPayment, setSelectedPayment] = useState("cod");
+  const [placing,         setPlacing]         = useState(false);
 
   const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
   const total       = subtotal + deliveryFee;
 
-  // Resolve which address to use when placing order
   const resolvedAddress: Address =
     selectedAddress === "new" ? newAddressForm : savedAddresses[selectedAddress];
 
-  const handlePlaceOrder = () => {
-    const pm = paymentMethods.find((p) => p.id === selectedPayment);
+  const handlePlaceOrder = async () => {
+    const pm      = paymentMethods.find((p) => p.id === selectedPayment);
     const orderId = generateOrderId();
+    setPlacing(true);
 
+    // 1. Save to localStorage for the confirmation page
     saveOrder({
       id: orderId,
       date: new Date().toISOString(),
@@ -582,20 +553,52 @@ export default function CheckoutPage() {
         pincode: resolvedAddress.pincode,
       },
       items: items.map((i) => ({
-        id:       i.id,
-        name:     i.name,
-        variant:  i.variant,
-        price:    i.price,
-        quantity: i.quantity,
-        image:    i.image,
+        id: i.id, name: i.name, variant: i.variant,
+        price: i.price, quantity: i.quantity, image: i.image,
       })),
-      subtotal,
-      deliveryFee,
-      couponDiscount: 0,
-      total,
+      subtotal, deliveryFee, couponDiscount: 0, total,
     });
 
+    // 2. Also save to MongoDB so admin can see it
+    try {
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderNumber:   orderId,
+          customerName:  resolvedAddress.fullName,
+          customerPhone: resolvedAddress.phone,
+          total,
+          subtotal,
+          deliveryFee,
+          paymentMethod: pm?.label ?? "Cash on Delivery",
+          status: "pending",
+          address: {
+            name:    resolvedAddress.fullName,
+            phone:   resolvedAddress.phone,
+            line1:   resolvedAddress.addressLine1,
+            line2:   resolvedAddress.addressLine2 || undefined,
+            city:    resolvedAddress.city,
+            state:   resolvedAddress.state,
+            pincode: resolvedAddress.pincode,
+          },
+          items: items.map((i) => ({
+            productId: String(i.id),
+            name:      i.name,
+            variant:   i.variant,
+            price:     i.price,
+            quantity:  i.quantity,
+            image:     i.image,
+          })),
+        }),
+      });
+    } catch {
+      // Non-fatal — order is still saved locally
+      console.warn("Could not sync order to DB");
+    }
+
     clearCart();
+    setPlacing(false);
     router.push(`/order-confirmation?id=${orderId}`);
   };
 
@@ -631,39 +634,28 @@ export default function CheckoutPage() {
             {step === "address" && (
               <AddressStep
                 onNext={() => setStep("payment")}
-                selected={selectedAddress}
-                setSelected={setSelectedAddress}
-                newAddressForm={newAddressForm}
-                setNewAddressForm={setNewAddressForm}
+                selected={selectedAddress} setSelected={setSelectedAddress}
+                newAddressForm={newAddressForm} setNewAddressForm={setNewAddressForm}
               />
             )}
             {step === "payment" && (
               <PaymentStep
-                onNext={() => setStep("review")}
-                onBack={() => setStep("address")}
-                selected={selectedPayment}
-                setSelected={setSelectedPayment}
+                onNext={() => setStep("review")} onBack={() => setStep("address")}
+                selected={selectedPayment} setSelected={setSelectedPayment}
                 total={total}
+                allowCOD={config.allowCOD} allowUPI={config.allowUPI} allowCard={config.allowCard}
               />
             )}
             {step === "review" && (
               <ReviewStep
-                onPlace={handlePlaceOrder}
-                onBack={() => setStep("payment")}
-                paymentMethod={selectedPayment}
-                subtotal={subtotal}
-                deliveryFee={deliveryFee}
-                total={total}
-                address={resolvedAddress}
+                onPlace={handlePlaceOrder} onBack={() => setStep("payment")}
+                paymentMethod={selectedPayment} subtotal={subtotal}
+                deliveryFee={deliveryFee} total={total}
+                address={resolvedAddress} placing={placing}
               />
             )}
           </div>
-          <OrderSummary
-            items={items}
-            subtotal={subtotal}
-            deliveryFee={deliveryFee}
-            total={total}
-          />
+          <OrderSummary items={items} subtotal={subtotal} deliveryFee={deliveryFee} total={total} />
         </div>
       </div>
     </div>
