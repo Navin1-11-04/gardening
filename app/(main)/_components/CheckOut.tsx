@@ -516,6 +516,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
   const { config } = useStoreConfig();   // ← dynamic from DB
+  const [paying, setPaying] = useState(false);
 
   const FREE_DELIVERY_THRESHOLD = config.freeDeliveryThreshold;
   const DELIVERY_FEE            = config.deliveryFee;
@@ -532,75 +533,77 @@ export default function CheckoutPage() {
   const resolvedAddress: Address =
     selectedAddress === "new" ? newAddressForm : savedAddresses[selectedAddress];
 
-  const handlePlaceOrder = async () => {
-    const pm      = paymentMethods.find((p) => p.id === selectedPayment);
-    const orderId = generateOrderId();
-    setPlacing(true);
-
-    // 1. Save to localStorage for the confirmation page
-    saveOrder({
-      id: orderId,
-      date: new Date().toISOString(),
-      status: "confirmed",
-      paymentMethod: pm?.label ?? "Cash on Delivery",
-      address: {
-        name:    resolvedAddress.fullName,
-        phone:   resolvedAddress.phone,
-        line1:   resolvedAddress.addressLine1,
-        line2:   resolvedAddress.addressLine2 || undefined,
-        city:    resolvedAddress.city,
-        state:   resolvedAddress.state,
-        pincode: resolvedAddress.pincode,
-      },
-      items: items.map((i) => ({
-        id: i.id, name: i.name, variant: i.variant,
-        price: i.price, quantity: i.quantity, image: i.image,
-      })),
-      subtotal, deliveryFee, couponDiscount: 0, total,
+   
+const handlePlaceOrder = async () => {
+  setPaying(true);
+  try {
+    const res = await fetch("/api/orders/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items,
+        address: resolvedAddress,
+        paymentMethod: selectedPayment,
+        subtotal,
+        deliveryFee,
+        couponDiscount: 0,
+      }),
     });
-
-    // 2. Also save to MongoDB so admin can see it
-    try {
-      await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderNumber:   orderId,
-          customerName:  resolvedAddress.fullName,
-          customerPhone: resolvedAddress.phone,
-          total,
-          subtotal,
-          deliveryFee,
-          paymentMethod: pm?.label ?? "Cash on Delivery",
-          status: "pending",
-          address: {
-            name:    resolvedAddress.fullName,
-            phone:   resolvedAddress.phone,
-            line1:   resolvedAddress.addressLine1,
-            line2:   resolvedAddress.addressLine2 || undefined,
-            city:    resolvedAddress.city,
-            state:   resolvedAddress.state,
-            pincode: resolvedAddress.pincode,
-          },
-          items: items.map((i) => ({
-            productId: String(i.id),
-            name:      i.name,
-            variant:   i.variant,
-            price:     i.price,
-            quantity:  i.quantity,
-            image:     i.image,
-          })),
-        }),
-      });
-    } catch {
-      // Non-fatal — order is still saved locally
-      console.warn("Could not sync order to DB");
+ 
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Order creation failed");
+ 
+    // COD — order is confirmed, go straight to confirmation page
+    if (!data.paymentRequired) {
+      clearCart();
+      router.push(`/order-confirmation?id=${data.orderId}`);
+      return;
     }
-
-    clearCart();
-    setPlacing(false);
-    router.push(`/order-confirmation?id=${orderId}`);
-  };
+ 
+    // Online payment — open Razorpay checkout
+    const options = {
+      key:         data.keyId,
+      amount:      data.amount,
+      currency:    data.currency,
+      name:        "Kavin Organics",
+      description: "Garden supplies order",
+      image:       "/logo.png",
+      order_id:    data.razorpayOrderId,
+      prefill:     data.prefill,
+      theme: {
+        color: "#3d6b35",
+      },
+      handler: (response: any) => {
+        // Payment captured — webhook will confirm the order in DB
+        // We optimistically clear the cart and redirect
+        clearCart();
+        router.push(`/order-confirmation?id=${data.orderId}`);
+      },
+      modal: {
+        ondismiss: () => {
+          setPaying(false);
+        },
+      },
+    };
+ 
+    // @ts-ignore — Razorpay is loaded via script tag in layout.tsx
+    const rzp = new window.Razorpay(options);
+ 
+    rzp.on("payment.failed", (response: any) => {
+      console.error("Payment failed:", response.error);
+      setPaying(false);
+      alert(
+        `Payment failed: ${response.error.description}. Please try again or use Cash on Delivery.`
+      );
+    });
+ 
+    rzp.open();
+  } catch (err) {
+    console.error("Place order error:", err);
+    alert("Something went wrong. Please try again or call us at +91 98765 43210.");
+    setPaying(false);
+  }
+};
 
   if (items.length === 0) {
     return (
