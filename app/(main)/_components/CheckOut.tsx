@@ -29,13 +29,7 @@ interface PaymentMethod {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const savedAddresses: Address[] = [
-  {
-    fullName: "Meenakshi Rajan", phone: "98765 43210", pincode: "637501",
-    addressLine1: "No. 12, Gandhi Nagar", addressLine2: "Near Tamil Nadu Bank",
-    city: "Namakkal", state: "Tamil Nadu", type: "Home",
-  },
-];
+const savedAddresses: Address[] = [];
 
 const paymentMethods: PaymentMethod[] = [
   { id: "upi",        label: "UPI / GPay / PhonePe",  icon: <Smartphone size={22} />, desc: "Pay instantly with any UPI app" },
@@ -522,7 +516,7 @@ export default function CheckoutPage() {
   const DELIVERY_FEE            = config.deliveryFee;
 
   const [step,            setStep]            = useState<Step>("address");
-  const [selectedAddress, setSelectedAddress] = useState<number | "new">(0);
+ const [selectedAddress, setSelectedAddress] = useState<number | "new">("new");
   const [newAddressForm,  setNewAddressForm]  = useState<Address>(EMPTY_ADDRESS);
   const [selectedPayment, setSelectedPayment] = useState("cod");
   const [placing,         setPlacing]         = useState(false);
@@ -533,13 +527,15 @@ export default function CheckoutPage() {
   const resolvedAddress: Address =
     selectedAddress === "new" ? newAddressForm : savedAddresses[selectedAddress];
 
-   
-const handlePlaceOrder = async () => {
+ const handlePlaceOrder = async () => {
   setPaying(true);
+
   try {
     const res = await fetch("/api/orders/create", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         items,
         address: resolvedAddress,
@@ -549,58 +545,94 @@ const handlePlaceOrder = async () => {
         couponDiscount: 0,
       }),
     });
- 
+
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? "Order creation failed");
- 
+
+    if (!res.ok) {
+      throw new Error(data.error ?? "Order creation failed");
+    }
+
     // COD — order is confirmed, go straight to confirmation page
     if (!data.paymentRequired) {
+      saveOrder({
+        id: data.orderId,
+        date: new Date().toISOString(),
+        status: "confirmed",
+        paymentMethod: "Cash on Delivery",
+        address: {
+          name: resolvedAddress.fullName,
+          phone: resolvedAddress.phone,
+          line1: resolvedAddress.addressLine1,
+          line2: resolvedAddress.addressLine2,
+          city: resolvedAddress.city,
+          state: resolvedAddress.state,
+          pincode: resolvedAddress.pincode,
+        },
+        items: items.map((i) => ({
+          id: i.id,
+          name: i.name,
+          variant: i.variant ?? "",
+          price: i.price,
+          quantity: i.quantity,
+          image: i.image,
+        })),
+        subtotal,
+        deliveryFee,
+        couponDiscount: 0,
+        total,
+      });
+
       clearCart();
       router.push(`/order-confirmation?id=${data.orderId}`);
       return;
     }
- 
+
     // Online payment — open Razorpay checkout
     const options = {
-      key:         data.keyId,
-      amount:      data.amount,
-      currency:    data.currency,
-      name:        "Kavin Organics",
+      key: data.keyId,
+      amount: data.amount,
+      currency: data.currency,
+      name: "Kavin Organics",
       description: "Garden supplies order",
-      image:       "/logo.png",
-      order_id:    data.razorpayOrderId,
-      prefill:     data.prefill,
+      image: "/logo.png",
+      order_id: data.razorpayOrderId,
+      prefill: data.prefill,
       theme: {
         color: "#3d6b35",
       },
+
       handler: (response: any) => {
-        // Payment captured — webhook will confirm the order in DB
-        // We optimistically clear the cart and redirect
         clearCart();
         router.push(`/order-confirmation?id=${data.orderId}`);
       },
+
       modal: {
         ondismiss: () => {
           setPaying(false);
         },
       },
     };
- 
-    // @ts-ignore — Razorpay is loaded via script tag in layout.tsx
+
+    // @ts-ignore
     const rzp = new window.Razorpay(options);
- 
+
     rzp.on("payment.failed", (response: any) => {
       console.error("Payment failed:", response.error);
       setPaying(false);
+
       alert(
         `Payment failed: ${response.error.description}. Please try again or use Cash on Delivery.`
       );
     });
- 
+
     rzp.open();
   } catch (err) {
     console.error("Place order error:", err);
-    alert("Something went wrong. Please try again or call us at +91 98765 43210.");
+
+    alert(
+      "Something went wrong. Please try again or call us at +91 98765 43210."
+    );
+
     setPaying(false);
   }
 };

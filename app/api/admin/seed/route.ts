@@ -1,41 +1,46 @@
-// app/api/admin/seed/route.ts
-// Seeds the MongoDB database with an admin user and default categories.
-// Protect with ADMIN_SEED_KEY env var.
-
 import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import { connectDB } from "@/lib/mongodb";
-import { Admin } from "@/models/Admin";
-import { Category } from "@/models/Category";
 
 export async function POST(request: NextRequest) {
+  // Hard block in production
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "Seed route is disabled in production." },
+      { status: 403 }
+    );
+  }
+
   try {
     const authKey = request.headers.get("x-seed-key");
-
-    if (authKey !== process.env.ADMIN_SEED_KEY) {
+    if (!process.env.ADMIN_SEED_KEY || authKey !== process.env.ADMIN_SEED_KEY) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const bcrypt = await import("bcryptjs");
+    const { connectDB } = await import("@/lib/mongodb");
+    const { Admin } = await import("@/models/Admin");
+    const { Category } = await import("@/models/Category");
+
     await connectDB();
 
-    // ── Admin user ────────────────────────────────────────────────────────────
-    const hashedPassword = await bcrypt.hash("admin123", 10);
+    const hashedPassword = await bcrypt.hash(
+      process.env.ADMIN_DEFAULT_PASSWORD ?? "admin123",
+      12
+    );
 
     const admin = await Admin.findOneAndUpdate(
-      { email: "admin@kavin-organics.com" },
+      { email: process.env.ADMIN_EMAIL ?? "admin@kavin-organics.com" },
       {
         $setOnInsert: {
-          email: "admin@kavin-organics.com",
+          email:    process.env.ADMIN_EMAIL ?? "admin@kavin-organics.com",
           password: hashedPassword,
-          name: "Admin",
-          role: "admin",
-          active: true,
+          name:     "Admin",
+          role:     "admin",
+          active:   true,
         },
       },
       { upsert: true, new: true }
     );
 
-    // ── Categories ────────────────────────────────────────────────────────────
     const categories = [
       { name: "Seeds",        nameTa: "விதைகள்",         slug: "seeds" },
       { name: "Grow Bags",    nameTa: "வளர் பைகள்",       slug: "grow-bags" },
@@ -55,14 +60,11 @@ export async function POST(request: NextRequest) {
       if (result) categoriesCreated++;
     }
 
-    return NextResponse.json(
-      {
-        message: "Database seeded successfully!",
-        admin: { email: admin.email, name: admin.name },
-        categoriesCreated,
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      message: "Database seeded successfully!",
+      admin:   { email: admin.email, name: admin.name },
+      categoriesCreated,
+    });
   } catch (error) {
     console.error("Seeding error:", error);
     return NextResponse.json(

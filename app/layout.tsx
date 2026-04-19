@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import localFont from "next/font/local";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import Script from "next/script"
 
 const figtree = Figtree({
   subsets: ["latin"],
@@ -46,6 +47,12 @@ export default function RootLayout({
         geistMono.variable
       )}
     >
+      <head>
+<Script
+  src="https://checkout.razorpay.com/v1/checkout.js"
+  strategy="beforeInteractive"
+/>
+      </head>
       <body className="font-sans antialiased">
         {/* LanguageProvider at root so every page (shop, admin, etc.) shares the same locale */}
         <LanguageProvider>
