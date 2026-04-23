@@ -63,7 +63,7 @@ const ToggleField = ({
       }`}
     >
       <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-        value ? "translate-x-5" : "translate-x-0.5"
+        value ? "translate-x-0" : "-translate-x-5"
       }`} />
     </button>
   </div>
