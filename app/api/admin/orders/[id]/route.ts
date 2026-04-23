@@ -62,6 +62,42 @@ export async function PATCH(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    const o = order as any;
+
+    // ── Fire customer notifications on meaningful status changes ───────────────
+    if (status === "shipped" || status === "delivered") {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+
+      const notifyPayload = {
+        orderNumber:   o.orderNumber,
+        customerName:  o.customerName,
+        customerPhone: o.customerPhone,
+        customerEmail: o.customerEmail,
+        status,
+        total:         o.total,
+        items:         (o.items ?? []).map((i: any) => ({
+          name:     i.name,
+          quantity: i.quantity,
+        })),
+        address: o.address ?? {},
+      };
+
+      // Fire-and-forget — don't block the admin response
+      fetch(`${baseUrl}/api/notify/whatsapp/status`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(notifyPayload),
+      }).catch(console.error);
+
+      if (o.customerEmail) {
+        fetch(`${baseUrl}/api/notify/email/status`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify(notifyPayload),
+        }).catch(console.error);
+      }
+    }
+
     return NextResponse.json({ message: "Status updated", status });
   } catch (error) {
     console.error("Update order error:", error);

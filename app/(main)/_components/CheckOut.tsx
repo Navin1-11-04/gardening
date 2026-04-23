@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   ChevronRight, MapPin, CreditCard, CheckCircle2, Plus,
   Truck, ShieldCheck, Phone, Pencil, Check,
-  Wallet, Smartphone, Building2,
+  Wallet, Smartphone, Building2, MessageSquare, RefreshCw,
 } from "lucide-react";
 import { useCart } from "../_context/CartContext";
 import { saveOrder, generateOrderId } from "@/lib/orderStorage";
@@ -15,7 +15,7 @@ import { useStoreConfig } from "@/lib/useStoreConfig";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Step = "address" | "payment" | "review";
+type Step = "address" | "otp" | "payment" | "review";
 
 interface Address {
   fullName: string; phone: string; pincode: string;
@@ -29,19 +29,18 @@ interface PaymentMethod {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const savedAddresses: Address[] = [];
-
 const paymentMethods: PaymentMethod[] = [
   { id: "upi",        label: "UPI / GPay / PhonePe",  icon: <Smartphone size={22} />, desc: "Pay instantly with any UPI app" },
-  { id: "card",       label: "Credit / Debit Card",    icon: <CreditCard size={22} />,  desc: "Visa, Mastercard, RuPay" },
-  { id: "netbanking", label: "Net Banking",             icon: <Building2 size={22} />,   desc: "All major Indian banks" },
-  { id: "cod",        label: "Cash on Delivery",        icon: <Wallet size={22} />,      desc: "Pay when your order arrives" },
+  { id: "card",       label: "Credit / Debit Card",   icon: <CreditCard size={22} />, desc: "Visa, Mastercard, RuPay" },
+  { id: "netbanking", label: "Net Banking",            icon: <Building2 size={22} />,  desc: "All major Indian banks" },
+  { id: "cod",        label: "Cash on Delivery",       icon: <Wallet size={22} />,     desc: "Pay when your order arrives" },
 ];
 
 const STEPS: { id: Step; label: string }[] = [
-  { id: "address", label: "Delivery Address" },
-  { id: "payment", label: "Payment Method" },
-  { id: "review",  label: "Review & Place Order" },
+  { id: "address", label: "Address" },
+  { id: "otp",     label: "Verify" },
+  { id: "payment", label: "Payment" },
+  { id: "review",  label: "Review" },
 ];
 
 // ─── Step Bar ─────────────────────────────────────────────────────────────────
@@ -54,22 +53,20 @@ const StepBar = ({ current }: { current: Step }) => {
         const done = i < idx; const active = i === idx;
         return (
           <div key={step.id} className="flex items-center">
-            <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm sm:text-base font-bold transition-all ${
+            <div className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-sm sm:text-base font-bold transition-all ${
               active ? "bg-[#3d6b35] text-white shadow-md" :
               done   ? "bg-[#eef5ea] text-[#3d6b35] border border-[#b8d4a0]" :
                        "bg-white text-[#a8a090] border border-[#e8e0d0]"
             }`}>
               <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
-                active ? "bg-white/20 text-white" :
-                done   ? "bg-[#3d6b35] text-white" :
-                          "bg-[#f0ece4] text-[#a8a090]"
+                active ? "bg-white/20 text-white" : done ? "bg-[#3d6b35] text-white" : "bg-[#f0ece4] text-[#a8a090]"
               }`}>
                 {done ? <Check size={14} /> : i + 1}
               </span>
               <span className="hidden sm:inline whitespace-nowrap">{step.label}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`w-6 sm:w-10 h-0.5 mx-1 ${i < idx ? "bg-[#3d6b35]" : "bg-[#e8e0d0]"}`} />
+              <div className={`w-4 sm:w-8 h-0.5 mx-1 ${i < idx ? "bg-[#3d6b35]" : "bg-[#e8e0d0]"}`} />
             )}
           </div>
         );
@@ -90,9 +87,7 @@ const Field = ({
     <label className="text-base font-bold text-[#2a2a1e]">
       {label}{required && <span className="text-[#c0392b] ml-1">*</span>}
     </label>
-    <input
-      type={type} value={value} onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
+    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
       className="w-full bg-white border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3.5 text-base text-[#2a2a1e] placeholder:text-[#b0a890] outline-none transition-colors"
     />
   </div>
@@ -101,18 +96,20 @@ const Field = ({
 // ─── Address Step ─────────────────────────────────────────────────────────────
 
 const AddressStep = ({
-  onNext, selected, setSelected, newAddressForm, setNewAddressForm,
+  onNext, newAddressForm, setNewAddressForm,
 }: {
-  onNext: () => void; selected: number | "new"; setSelected: (v: number | "new") => void;
-  newAddressForm: Address; setNewAddressForm: (v: Address) => void;
+  onNext: () => void;
+  newAddressForm: Address;
+  setNewAddressForm: (v: Address) => void;
 }) => {
   const set = (k: keyof Address) => (v: string) =>
     setNewAddressForm({ ...newAddressForm, [k]: v });
 
-  const isValid =
-    selected !== "new" ||
-    (newAddressForm.fullName && newAddressForm.phone && newAddressForm.pincode &&
-     newAddressForm.addressLine1 && newAddressForm.city && newAddressForm.state);
+  const isValid = !!(
+    newAddressForm.fullName && newAddressForm.phone &&
+    newAddressForm.pincode && newAddressForm.addressLine1 &&
+    newAddressForm.city && newAddressForm.state
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -122,84 +119,211 @@ const AddressStep = ({
         <p className="text-base text-[#7a7a68] mt-1">Where should we deliver your order?</p>
       </div>
 
-      {savedAddresses.map((addr, i) => (
-        <button key={i} onClick={() => setSelected(i)}
-          className={`w-full text-left flex items-start gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all ${
-            selected === i ? "border-[#3d6b35] bg-[#eef5ea]" : "border-[#e8e0d0] bg-white hover:border-[#a8c890]"
-          }`}
-        >
-          <div className={`mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-            selected === i ? "border-[#3d6b35] bg-[#3d6b35]" : "border-[#d4c9a8]"
-          }`}>
-            {selected === i && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-base font-bold text-[#2a2a1e]">{addr.fullName}</span>
-              <span className="text-xs font-bold bg-[#3d6b35] text-white px-2.5 py-0.5 rounded-full">{addr.type}</span>
-            </div>
-            <p className="text-sm text-[#5a5a48] leading-snug">
-              {addr.addressLine1}{addr.addressLine2 ? ", " + addr.addressLine2 : ""}, {addr.city} — {addr.pincode}
-            </p>
-            <p className="text-sm text-[#5a5a48] mt-0.5">{addr.state} · 📞 {addr.phone}</p>
-          </div>
-          {selected === i && (
-            <span className="shrink-0 flex items-center gap-1 text-xs font-semibold text-[#3d6b35] mt-0.5">
-              <Pencil size={12} /> Edit
-            </span>
-          )}
-        </button>
-      ))}
-
-      <button onClick={() => setSelected("new")}
-        className={`w-full flex items-center gap-3 p-4 sm:p-5 rounded-2xl border-2 transition-all ${
-          selected === "new"
-            ? "border-[#3d6b35] bg-[#eef5ea]"
-            : "border-dashed border-[#d4c9a8] bg-white hover:border-[#3d6b35] hover:bg-[#faf7f2]"
-        }`}
-      >
-        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-          selected === "new" ? "border-[#3d6b35] bg-[#3d6b35]" : "border-[#d4c9a8]"
-        }`}>
-          {selected === "new" ? <div className="w-2.5 h-2.5 rounded-full bg-white" /> : <Plus size={14} className="text-[#7a7a68]" />}
+      <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5 sm:p-6 flex flex-col gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <Field label="Full Name"    value={newAddressForm.fullName}     onChange={set("fullName")}     placeholder="e.g. Meenakshi Rajan"  required />
+          <Field label="Phone Number" value={newAddressForm.phone}        onChange={set("phone")}        placeholder="e.g. 98765 43210"      type="tel" required />
         </div>
-        <span className="text-base font-bold text-[#3d6b35]">Add a new address</span>
-      </button>
-
-      {selected === "new" && (
-        <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5 sm:p-6 flex flex-col gap-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field label="Full Name"    value={newAddressForm.fullName}     onChange={set("fullName")}     placeholder="e.g. Meenakshi Rajan"  required />
-            <Field label="Phone Number" value={newAddressForm.phone}        onChange={set("phone")}        placeholder="e.g. 98765 43210"      type="tel" required />
-          </div>
-          <Field label="Address Line 1" value={newAddressForm.addressLine1} onChange={set("addressLine1")} placeholder="House no., Street, Area" required />
-          <Field label="Address Line 2" value={newAddressForm.addressLine2} onChange={set("addressLine2")} placeholder="Landmark (optional)" />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <Field label="Pincode"     value={newAddressForm.pincode} onChange={set("pincode")} placeholder="6-digit pincode" required />
-            <Field label="City / Town" value={newAddressForm.city}    onChange={set("city")}    placeholder="e.g. Namakkal"   required />
-            <Field label="State"       value={newAddressForm.state}   onChange={set("state")}   placeholder="e.g. Tamil Nadu" required />
-          </div>
-          <div>
-            <label className="text-base font-bold text-[#2a2a1e] block mb-2">Address Type</label>
-            <div className="flex gap-3 flex-wrap">
-              {(["Home", "Work", "Other"] as const).map((t) => (
-                <button key={t} onClick={() => setNewAddressForm({ ...newAddressForm, type: t })}
-                  className={`px-5 py-2.5 rounded-xl text-base font-bold border-2 transition-all ${
-                    newAddressForm.type === t ? "bg-[#3d6b35] text-white border-[#3d6b35]" : "bg-white text-[#5a5a48] border-[#d4c9a8] hover:border-[#3d6b35]"
-                  }`}
-                >
-                  {t === "Home" ? "🏠" : t === "Work" ? "💼" : "📍"} {t}
-                </button>
-              ))}
-            </div>
+        <Field label="Address Line 1" value={newAddressForm.addressLine1} onChange={set("addressLine1")} placeholder="House no., Street, Area" required />
+        <Field label="Address Line 2" value={newAddressForm.addressLine2} onChange={set("addressLine2")} placeholder="Landmark (optional)" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <Field label="Pincode"     value={newAddressForm.pincode} onChange={set("pincode")} placeholder="6-digit pincode" required />
+          <Field label="City / Town" value={newAddressForm.city}    onChange={set("city")}    placeholder="e.g. Namakkal"   required />
+          <Field label="State"       value={newAddressForm.state}   onChange={set("state")}   placeholder="e.g. Tamil Nadu" required />
+        </div>
+        <div>
+          <label className="text-base font-bold text-[#2a2a1e] block mb-2">Address Type</label>
+          <div className="flex gap-3 flex-wrap">
+            {(["Home", "Work", "Other"] as const).map((t) => (
+              <button key={t} type="button" onClick={() => setNewAddressForm({ ...newAddressForm, type: t })}
+                className={`px-5 py-2.5 rounded-xl text-base font-bold border-2 transition-all ${
+                  newAddressForm.type === t ? "bg-[#3d6b35] text-white border-[#3d6b35]" : "bg-white text-[#5a5a48] border-[#d4c9a8] hover:border-[#3d6b35]"
+                }`}
+              >
+                {t === "Home" ? "🏠" : t === "Work" ? "💼" : "📍"} {t}
+              </button>
+            ))}
           </div>
         </div>
-      )}
+      </div>
 
       <button onClick={onNext} disabled={!isValid}
         className="w-full flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md"
       >
-        Continue to Payment <ChevronRight size={22} />
+        Continue to Verify Phone <ChevronRight size={22} />
+      </button>
+    </div>
+  );
+};
+
+// ─── OTP Step ─────────────────────────────────────────────────────────────────
+
+const OtpStep = ({
+  phone, onVerified, onBack,
+}: {
+  phone: string; onVerified: () => void; onBack: () => void;
+}) => {
+  const [otp,          setOtp]          = useState("");
+  const [sending,      setSending]      = useState(false);
+  const [verifying,    setVerifying]    = useState(false);
+  const [sent,         setSent]         = useState(false);
+  const [countdown,    setCountdown]    = useState(0);
+  const [sendError,    setSendError]    = useState("");
+  const [verifyError,  setVerifyError]  = useState("");
+
+  const startCountdown = () => {
+    setCountdown(30);
+    const id = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) { clearInterval(id); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendOtp = async () => {
+    setSending(true);
+    setSendError("");
+    setVerifyError("");
+    setOtp("");
+    try {
+      const res  = await fetch("/api/otp/send", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setSendError(data.error ?? "Failed to send OTP."); return; }
+      setSent(true);
+      startCountdown();
+    } catch {
+      setSendError("Network error. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (otp.length !== 6) { setVerifyError("Please enter the 6-digit code."); return; }
+    setVerifying(true);
+    setVerifyError("");
+    try {
+      const res  = await fetch("/api/otp/verify", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setVerifyError(data.error ?? "Incorrect OTP."); return; }
+      onVerified();
+    } catch {
+      setVerifyError("Network error. Please try again.");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const displayPhone = phone.replace(/\D/g, "").slice(-10).replace(/(\d{5})(\d{5})/, "$1 $2");
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <p className="text-sm font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">Step 2</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#2a2a1e] font-outfit">Verify Your Phone</h2>
+        <p className="text-base text-[#7a7a68] mt-1">
+          We'll send a one-time code to <span className="font-bold text-[#2a2a1e]">{displayPhone}</span> to confirm your order.
+        </p>
+      </div>
+
+      <div className="bg-white border border-[#e8e0d0] rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
+        {/* Phone display */}
+        <div className="flex items-center gap-3 bg-[#eef5ea] border border-[#b8d4a0] rounded-2xl px-4 py-3">
+          <Phone size={20} className="text-[#3d6b35] shrink-0" />
+          <div>
+            <p className="text-xs text-[#5a7a50] font-semibold">Sending OTP to</p>
+            <p className="text-lg font-black text-[#2a2a1e]">+91 {displayPhone}</p>
+          </div>
+          <button onClick={onBack} className="ml-auto text-sm font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
+            <Pencil size={13} />Change
+          </button>
+        </div>
+
+        {!sent ? (
+          <>
+            {sendError && <p className="text-sm text-red-600 font-semibold bg-red-50 border border-red-200 rounded-xl px-4 py-3">{sendError}</p>}
+            <button onClick={handleSendOtp} disabled={sending}
+              className="w-full flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] text-white font-bold text-lg py-4 rounded-xl transition-all"
+            >
+              {sending
+                ? <><RefreshCw size={20} className="animate-spin" />Sending…</>
+                : <><MessageSquare size={20} />Send Verification Code</>
+              }
+            </button>
+            <p className="text-xs text-center text-[#a8a090]">
+              You'll receive a free SMS with a 6-digit code. Standard message rates may apply.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-bold text-[#2a2a1e]">
+                ✅ Code sent to +91 {displayPhone}
+              </p>
+              <p className="text-xs text-[#7a7a68]">
+                Check your SMS inbox. The code expires in 10 minutes.
+              </p>
+            </div>
+
+            {/* OTP input — large digits for elderly users */}
+            <div className="flex flex-col gap-2">
+              <label className="text-base font-bold text-[#2a2a1e]">Enter 6-digit code</label>
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={6}
+                value={otp}
+                onChange={(e) => {
+                  setVerifyError("");
+                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                }}
+                placeholder="_ _ _ _ _ _"
+                className="w-full text-center text-3xl font-black tracking-[1rem] bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-4 outline-none transition-colors"
+                autoFocus
+              />
+              {verifyError && (
+                <p className="text-sm text-red-600 font-semibold bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+                  {verifyError}
+                </p>
+              )}
+            </div>
+
+            <button onClick={handleVerify} disabled={verifying || otp.length !== 6}
+              className="w-full flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl transition-all"
+            >
+              {verifying
+                ? <><RefreshCw size={20} className="animate-spin" />Verifying…</>
+                : <><CheckCircle2 size={20} />Verify & Continue</>
+              }
+            </button>
+
+            {/* Resend */}
+            <div className="text-center">
+              {countdown > 0 ? (
+                <p className="text-sm text-[#a8a090]">Resend code in {countdown}s</p>
+              ) : (
+                <button onClick={handleSendOtp} disabled={sending}
+                  className="text-sm font-semibold text-[#3d6b35] hover:underline disabled:opacity-50"
+                >
+                  {sending ? "Sending…" : "Resend code"}
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      <button onClick={onBack}
+        className="w-full flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all"
+      >
+        ← Back to Address
       </button>
     </div>
   );
@@ -213,14 +337,7 @@ const PaymentStep = ({
   onNext: () => void; onBack: () => void; selected: string; setSelected: (v: string) => void;
   total: number; allowCOD: boolean; allowUPI: boolean; allowCard: boolean;
 }) => {
-  const [upiId, setUpiId]       = useState("");
-  const [cardNum, setCardNum]   = useState("");
-  const [cardName, setCardName] = useState("");
-  const [expiry, setExpiry]     = useState("");
-  const [cvv, setCvv]           = useState("");
-
-  // Filter methods based on settings
-  const availableMethods = paymentMethods.filter((m) => {
+  const available = paymentMethods.filter((m) => {
     if (m.id === "cod" && !allowCOD) return false;
     if (m.id === "upi" && !allowUPI) return false;
     if (m.id === "card" && !allowCard) return false;
@@ -230,88 +347,58 @@ const PaymentStep = ({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <p className="text-sm font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">Step 2</p>
+        <p className="text-sm font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">Step 3</p>
         <h2 className="text-2xl sm:text-3xl font-bold text-[#2a2a1e] font-outfit">Payment Method</h2>
         <p className="text-base text-[#7a7a68] mt-1">Choose how you'd like to pay.</p>
       </div>
 
       <div className="flex flex-col gap-3">
-        {availableMethods.map((method) => (
-          <div key={method.id}>
-            <button onClick={() => setSelected(method.id)}
-              className={`w-full flex items-center gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all text-left ${
-                selected === method.id ? "border-[#3d6b35] bg-[#eef5ea]" : "border-[#e8e0d0] bg-white hover:border-[#a8c890]"
-              }`}
-            >
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                selected === method.id ? "border-[#3d6b35] bg-[#3d6b35]" : "border-[#d4c9a8]"
-              }`}>
-                {selected === method.id && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
-              </div>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                selected === method.id ? "bg-[#3d6b35] text-white" : "bg-[#f0ece4] text-[#5a5a48]"
-              }`}>
-                {method.icon}
-              </div>
-              <div className="flex-1">
-                <p className="text-base sm:text-lg font-bold text-[#2a2a1e]">{method.label}</p>
-                <p className="text-sm text-[#7a7a68]">{method.desc}</p>
-              </div>
-              {method.id === "cod" && (
-                <span className="text-xs font-bold bg-[#fff8ee] text-[#7a5c1e] border border-[#f0d080] px-2.5 py-1 rounded-full shrink-0">
-                  No extra charge
-                </span>
-              )}
-            </button>
-
-            {selected === "upi" && method.id === "upi" && (
-              <div className="mt-2 bg-white border border-[#e8e0d0] rounded-2xl p-5">
-                <p className="text-base font-bold text-[#2a2a1e] mb-3">Enter your UPI ID</p>
-                <div className="flex gap-3">
-                  <input value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="yourname@upi"
-                    className="flex-1 bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3.5 text-base outline-none transition-colors"
-                  />
-                  <button className="bg-[#eef5ea] hover:bg-[#3d6b35] hover:text-white text-[#3d6b35] border-2 border-[#b8d4a0] hover:border-[#3d6b35] font-bold px-5 rounded-xl transition-all text-sm">
-                    Verify
-                  </button>
-                </div>
-              </div>
+        {available.map((method) => (
+          <button key={method.id} type="button" onClick={() => setSelected(method.id)}
+            className={`w-full flex items-center gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all text-left ${
+              selected === method.id ? "border-[#3d6b35] bg-[#eef5ea]" : "border-[#e8e0d0] bg-white hover:border-[#a8c890]"
+            }`}
+          >
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+              selected === method.id ? "border-[#3d6b35] bg-[#3d6b35]" : "border-[#d4c9a8]"
+            }`}>
+              {selected === method.id && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+            </div>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+              selected === method.id ? "bg-[#3d6b35] text-white" : "bg-[#f0ece4] text-[#5a5a48]"
+            }`}>
+              {method.icon}
+            </div>
+            <div className="flex-1">
+              <p className="text-base sm:text-lg font-bold text-[#2a2a1e]">{method.label}</p>
+              <p className="text-sm text-[#7a7a68]">{method.desc}</p>
+            </div>
+            {method.id === "cod" && (
+              <span className="text-xs font-bold bg-[#fff8ee] text-[#7a5c1e] border border-[#f0d080] px-2.5 py-1 rounded-full shrink-0">
+                No extra charge
+              </span>
             )}
-
-            {selected === "card" && method.id === "card" && (
-              <div className="mt-2 bg-white border border-[#e8e0d0] rounded-2xl p-5 flex flex-col gap-4">
-                <p className="text-base font-bold text-[#2a2a1e]">Card Details</p>
-                <Field label="Card Number"  value={cardNum}  onChange={setCardNum}  placeholder="1234 5678 9012 3456" />
-                <Field label="Name on Card" value={cardName} onChange={setCardName} placeholder="As printed on card" />
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Expiry Date" value={expiry} onChange={setExpiry} placeholder="MM / YY" />
-                  <Field label="CVV"         value={cvv}    onChange={setCvv}    placeholder="3-digit code" type="password" />
-                </div>
-                <div className="flex items-center gap-2 text-xs text-[#7a7a68] bg-[#faf7f2] p-3 rounded-xl border border-[#e8e0d0]">
-                  <ShieldCheck size={16} className="text-[#3d6b35] shrink-0" />
-                  Your card details are encrypted and never stored.
-                </div>
-              </div>
-            )}
-
-            {selected === "cod" && method.id === "cod" && (
-              <div className="mt-2 bg-[#fff8ee] border border-[#f0d080] rounded-2xl p-4">
-                <p className="text-base text-[#7a5c1e] leading-relaxed">
-                  💰 Please keep <strong>₹{total.toLocaleString("en-IN")}</strong> ready in cash when your order arrives.
-                </p>
-              </div>
-            )}
-          </div>
+          </button>
         ))}
       </div>
 
+      {selected === "cod" && (
+        <div className="bg-[#fff8ee] border border-[#f0d080] rounded-2xl p-4">
+          <p className="text-base text-[#7a5c1e] leading-relaxed">
+            💰 Please keep <strong>₹{total.toLocaleString("en-IN")}</strong> ready in cash when your order arrives.
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3">
-        <button onClick={onBack}
-          className="sm:w-40 flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all"
-        >← Back</button>
+        <button onClick={onBack} className="sm:w-40 flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all">
+          ← Back
+        </button>
         <button onClick={onNext} disabled={!selected}
           className="flex-1 flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md"
-        >Review Order <ChevronRight size={22} /></button>
+        >
+          Review Order <ChevronRight size={22} />
+        </button>
       </div>
     </div>
   );
@@ -331,9 +418,17 @@ const ReviewStep = ({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <p className="text-sm font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">Step 3</p>
+        <p className="text-sm font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">Step 4</p>
         <h2 className="text-2xl sm:text-3xl font-bold text-[#2a2a1e] font-outfit">Review Your Order</h2>
         <p className="text-base text-[#7a7a68] mt-1">Please check everything before placing your order.</p>
+      </div>
+
+      {/* Verified badge */}
+      <div className="flex items-center gap-2 bg-[#eef5ea] border border-[#b8d4a0] rounded-xl px-4 py-3">
+        <CheckCircle2 size={18} className="text-[#3d6b35] shrink-0" />
+        <p className="text-sm font-semibold text-[#3d6b35]">
+          Phone <span className="font-black">+91 {address.phone.replace(/\D/g,"").slice(-10).replace(/(\d{5})(\d{5})/,"$1 $2")}</span> verified ✓
+        </p>
       </div>
 
       <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5">
@@ -342,8 +437,8 @@ const ReviewStep = ({
             <MapPin size={18} className="text-[#3d6b35]" />
             <span className="text-base font-bold text-[#2a2a1e]">Delivering to</span>
           </div>
-          <button onClick={onBack} className="text-sm font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
-            <Pencil size={13} /> Change
+          <button onClick={() => onBack()} className="text-sm font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
+            <Pencil size={13} />Change
           </button>
         </div>
         <p className="text-base font-bold text-[#2a2a1e]">{address.fullName} · 📞 {address.phone}</p>
@@ -356,14 +451,9 @@ const ReviewStep = ({
       </div>
 
       <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <CreditCard size={18} className="text-[#3d6b35]" />
-            <span className="text-base font-bold text-[#2a2a1e]">Payment</span>
-          </div>
-          <button onClick={onBack} className="text-sm font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
-            <Pencil size={13} /> Change
-          </button>
+        <div className="flex items-center gap-2 mb-3">
+          <CreditCard size={18} className="text-[#3d6b35]" />
+          <span className="text-base font-bold text-[#2a2a1e]">Payment</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#eef5ea] flex items-center justify-center text-[#3d6b35]">{pm?.icon}</div>
@@ -396,8 +486,7 @@ const ReviewStep = ({
         </div>
         <div className="px-5 py-4 bg-[#faf7f2] border-t border-[#e8e0d0] flex flex-col gap-2">
           <div className="flex justify-between text-sm text-[#5a5a48]">
-            <span>Subtotal</span>
-            <span className="font-semibold">₹{subtotal.toLocaleString("en-IN")}</span>
+            <span>Subtotal</span><span className="font-semibold">₹{subtotal.toLocaleString("en-IN")}</span>
           </div>
           <div className="flex justify-between text-sm text-[#3d6b35]">
             <span className="flex items-center gap-1"><Truck size={13} />Delivery</span>
@@ -412,23 +501,22 @@ const ReviewStep = ({
 
       <p className="text-sm text-[#7a7a68] leading-relaxed">
         By placing this order, you agree to our{" "}
-        <Link href="/privacy" className="text-[#3d6b35] font-semibold underline underline-offset-2">Terms & Conditions</Link>{" "}
-        and{" "}
-        <Link href="/privacy" className="text-[#3d6b35] font-semibold underline underline-offset-2">Privacy Policy</Link>.
+        <Link href="/privacy" className="text-[#3d6b35] font-semibold underline underline-offset-2">Terms & Conditions</Link>.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <button onClick={onBack} disabled={placing}
           className="sm:w-40 flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all disabled:opacity-50"
-        >← Back</button>
+        >
+          ← Back
+        </button>
         <button onClick={onPlace} disabled={placing}
           className="flex-1 flex items-center justify-center gap-3 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] text-white font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md"
         >
-          {placing ? (
-            <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Placing Order…</>
-          ) : (
-            <><CheckCircle2 size={24} />Place Order — ₹{total.toLocaleString("en-IN")}</>
-          )}
+          {placing
+            ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Placing Order…</>
+            : <><CheckCircle2 size={24} />Place Order — ₹{total.toLocaleString("en-IN")}</>
+          }
         </button>
       </div>
     </div>
@@ -447,9 +535,7 @@ const OrderSummary = ({
     <div className="bg-white rounded-2xl border border-[#e8e0d0] overflow-hidden">
       <div className="bg-[#3d6b35] px-5 py-4 flex items-center justify-between">
         <h3 className="text-lg font-bold text-white">Order Summary</h3>
-        <Link href="/cart" className="text-white/80 hover:text-white text-sm font-semibold underline underline-offset-2 transition-colors">
-          Edit cart
-        </Link>
+        <Link href="/cart" className="text-white/80 hover:text-white text-sm font-semibold underline underline-offset-2 transition-colors">Edit cart</Link>
       </div>
       <div className="flex flex-col divide-y divide-[#f0ece4]">
         {items.map((item) => (
@@ -461,16 +547,13 @@ const OrderSummary = ({
               <p className="text-sm font-bold text-[#2a2a1e] leading-snug truncate">{item.name}</p>
               <p className="text-xs text-[#7a7a68]">{item.variant} × {item.quantity}</p>
             </div>
-            <p className="text-sm font-bold text-[#3d6b35] shrink-0">
-              ₹{(item.price * item.quantity).toLocaleString("en-IN")}
-            </p>
+            <p className="text-sm font-bold text-[#3d6b35] shrink-0">₹{(item.price * item.quantity).toLocaleString("en-IN")}</p>
           </div>
         ))}
       </div>
       <div className="px-5 py-4 bg-[#faf7f2] border-t border-[#e8e0d0] flex flex-col gap-2.5">
         <div className="flex justify-between text-sm text-[#5a5a48]">
-          <span>Subtotal</span>
-          <span className="font-semibold">₹{subtotal.toLocaleString("en-IN")}</span>
+          <span>Subtotal</span><span className="font-semibold">₹{subtotal.toLocaleString("en-IN")}</span>
         </div>
         <div className="flex justify-between text-sm text-[#3d6b35]">
           <span className="flex items-center gap-1"><Truck size={13} />Delivery</span>
@@ -486,15 +569,12 @@ const OrderSummary = ({
       <Phone size={20} className="text-[#3d6b35] shrink-0 mt-0.5" />
       <div>
         <p className="text-sm font-bold text-[#2a2a1e]">Need help placing your order?</p>
-        <a href="tel:+919876543210" className="text-base font-bold text-[#3d6b35] hover:underline mt-1 block">
-          📞 +91 98765 43210
-        </a>
+        <a href="tel:+919876543210" className="text-base font-bold text-[#3d6b35] hover:underline mt-1 block">📞 +91 98765 43210</a>
         <p className="text-xs text-[#7a7a68] mt-0.5">Mon–Sat, 9am–6pm</p>
       </div>
     </div>
     <div className="flex items-center justify-center gap-2 text-sm text-[#7a7a68]">
-      <ShieldCheck size={16} className="text-[#3d6b35]" />
-      100% secure & encrypted checkout
+      <ShieldCheck size={16} className="text-[#3d6b35]" />100% secure & encrypted checkout
     </div>
   </div>
 );
@@ -509,133 +589,81 @@ const EMPTY_ADDRESS: Address = {
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
-  const { config } = useStoreConfig();   // ← dynamic from DB
-  const [paying, setPaying] = useState(false);
+  const { config } = useStoreConfig();
 
   const FREE_DELIVERY_THRESHOLD = config.freeDeliveryThreshold;
   const DELIVERY_FEE            = config.deliveryFee;
 
-  const [step,            setStep]            = useState<Step>("address");
- const [selectedAddress, setSelectedAddress] = useState<number | "new">("new");
-  const [newAddressForm,  setNewAddressForm]  = useState<Address>(EMPTY_ADDRESS);
-  const [selectedPayment, setSelectedPayment] = useState("cod");
-  const [placing,         setPlacing]         = useState(false);
+  const [step,           setStep]           = useState<Step>("address");
+  const [addressForm,    setAddressForm]    = useState<Address>(EMPTY_ADDRESS);
+  const [selectedPayment,setSelectedPayment]= useState("cod");
+  const [placing,        setPlacing]        = useState(false);
 
   const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
   const total       = subtotal + deliveryFee;
 
-  const resolvedAddress: Address =
-    selectedAddress === "new" ? newAddressForm : savedAddresses[selectedAddress];
-
- const handlePlaceOrder = async () => {
-  setPaying(true);
-
-  try {
-    const res = await fetch("/api/orders/create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items,
-        address: resolvedAddress,
-        paymentMethod: selectedPayment,
-        subtotal,
-        deliveryFee,
-        couponDiscount: 0,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error ?? "Order creation failed");
-    }
-
-    // COD — order is confirmed, go straight to confirmation page
-    if (!data.paymentRequired) {
-      saveOrder({
-        id: data.orderId,
-        date: new Date().toISOString(),
-        status: "confirmed",
-        paymentMethod: "Cash on Delivery",
-        address: {
-          name: resolvedAddress.fullName,
-          phone: resolvedAddress.phone,
-          line1: resolvedAddress.addressLine1,
-          line2: resolvedAddress.addressLine2,
-          city: resolvedAddress.city,
-          state: resolvedAddress.state,
-          pincode: resolvedAddress.pincode,
-        },
-        items: items.map((i) => ({
-          id: i.id,
-          name: i.name,
-          variant: i.variant ?? "",
-          price: i.price,
-          quantity: i.quantity,
-          image: i.image,
-        })),
-        subtotal,
-        deliveryFee,
-        couponDiscount: 0,
-        total,
+  const handlePlaceOrder = async () => {
+    setPlacing(true);
+    try {
+      const res  = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items, address: addressForm, paymentMethod: selectedPayment,
+          subtotal, deliveryFee, couponDiscount: 0,
+        }),
       });
+      const data = await res.json();
 
-      clearCart();
-      router.push(`/order-confirmation?id=${data.orderId}`);
-      return;
-    }
+      if (!res.ok) {
+        if (data.requiresOtp) {
+          // OTP cookie expired — send back to OTP step
+          setStep("otp");
+          alert("Your verification has expired. Please verify your phone again.");
+          return;
+        }
+        throw new Error(data.error ?? "Order failed");
+      }
 
-    // Online payment — open Razorpay checkout
-    const options = {
-      key: data.keyId,
-      amount: data.amount,
-      currency: data.currency,
-      name: "Kavin Organics",
-      description: "Garden supplies order",
-      image: "/logo.png",
-      order_id: data.razorpayOrderId,
-      prefill: data.prefill,
-      theme: {
-        color: "#3d6b35",
-      },
-
-      handler: (response: any) => {
+      if (!data.paymentRequired) {
+        saveOrder({
+          id: data.orderId, date: new Date().toISOString(), status: "confirmed",
+          paymentMethod: "Cash on Delivery",
+          address: {
+            name: addressForm.fullName, phone: addressForm.phone,
+            line1: addressForm.addressLine1, line2: addressForm.addressLine2,
+            city: addressForm.city, state: addressForm.state, pincode: addressForm.pincode,
+          },
+          items: items.map((i) => ({ id: i.id, name: i.name, variant: i.variant ?? "", price: i.price, quantity: i.quantity, image: i.image })),
+          subtotal, deliveryFee, couponDiscount: 0, total,
+        });
         clearCart();
         router.push(`/order-confirmation?id=${data.orderId}`);
-      },
+        return;
+      }
 
-      modal: {
-        ondismiss: () => {
-          setPaying(false);
-        },
-      },
-    };
-
-    // @ts-ignore
-    const rzp = new window.Razorpay(options);
-
-    rzp.on("payment.failed", (response: any) => {
-      console.error("Payment failed:", response.error);
-      setPaying(false);
-
-      alert(
-        `Payment failed: ${response.error.description}. Please try again or use Cash on Delivery.`
-      );
-    });
-
-    rzp.open();
-  } catch (err) {
-    console.error("Place order error:", err);
-
-    alert(
-      "Something went wrong. Please try again or call us at +91 98765 43210."
-    );
-
-    setPaying(false);
-  }
-};
+      // Razorpay online payment
+      const options = {
+        key: data.keyId, amount: data.amount, currency: data.currency,
+        name: "Kavin Organics", description: "Garden supplies order",
+        order_id: data.razorpayOrderId, prefill: data.prefill,
+        theme: { color: "#3d6b35" },
+        handler: () => { clearCart(); router.push(`/order-confirmation?id=${data.orderId}`); },
+        modal: { ondismiss: () => setPlacing(false) },
+      };
+      // @ts-ignore
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", () => {
+        setPlacing(false);
+        alert("Payment failed. Please try again or use Cash on Delivery.");
+      });
+      rzp.open();
+    } catch (err: any) {
+      console.error("Place order error:", err);
+      alert(err.message ?? "Something went wrong. Please try again or call us.");
+      setPlacing(false);
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -668,14 +696,21 @@ export default function CheckoutPage() {
           <div className="flex-1 min-w-0">
             {step === "address" && (
               <AddressStep
-                onNext={() => setStep("payment")}
-                selected={selectedAddress} setSelected={setSelectedAddress}
-                newAddressForm={newAddressForm} setNewAddressForm={setNewAddressForm}
+                onNext={() => setStep("otp")}
+                newAddressForm={addressForm}
+                setNewAddressForm={setAddressForm}
+              />
+            )}
+            {step === "otp" && (
+              <OtpStep
+                phone={addressForm.phone}
+                onVerified={() => setStep("payment")}
+                onBack={() => setStep("address")}
               />
             )}
             {step === "payment" && (
               <PaymentStep
-                onNext={() => setStep("review")} onBack={() => setStep("address")}
+                onNext={() => setStep("review")} onBack={() => setStep("otp")}
                 selected={selectedPayment} setSelected={setSelectedPayment}
                 total={total}
                 allowCOD={config.allowCOD} allowUPI={config.allowUPI} allowCard={config.allowCard}
@@ -686,7 +721,7 @@ export default function CheckoutPage() {
                 onPlace={handlePlaceOrder} onBack={() => setStep("payment")}
                 paymentMethod={selectedPayment} subtotal={subtotal}
                 deliveryFee={deliveryFee} total={total}
-                address={resolvedAddress} placing={placing}
+                address={addressForm} placing={placing}
               />
             )}
           </div>
