@@ -1,39 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Phone, Mail, MapPin, Clock, Send, CheckCircle2,
   ChevronRight, MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 
+interface ContactContent {
+  phone?: string;
+  email?: string;
+  address?: string;
+  whatsapp?: string;
+  hours?: {
+    weekdays?: { open?: string; close?: string };
+    saturday?: { open?: string; close?: string };
+  };
+}
+
 interface FormState {
-  name: string;
-  phone: string;
-  email: string;
-  subject: string;
-  message: string;
+  name: string; phone: string; email: string; subject: string; message: string;
 }
 
 const EMPTY: FormState = { name: "", phone: "", email: "", subject: "", message: "" };
 
 const SUBJECTS = [
-  "Product enquiry",
-  "Order status",
-  "Bulk / wholesale order",
-  "Gardening advice",
-  "Delivery enquiry",
-  "Other",
+  "Product enquiry", "Order status", "Bulk / wholesale order",
+  "Gardening advice", "Delivery enquiry", "Other",
 ];
 
-export default function ContactPage() {
-  const [form,     setForm]     = useState<FormState>(EMPTY);
-  const [loading,  setLoading]  = useState(false);
-  const [success,  setSuccess]  = useState(false);
-  const [error,    setError]    = useState("");
+const FALLBACK: ContactContent = {
+  phone: "+91 98765 43210",
+  email: "hello@kavinorganics.in",
+  address: "No. 45, Market Road, Thiruchengode — 637211, Namakkal District, Tamil Nadu",
+  whatsapp: "919876543210",
+  hours: {
+    weekdays: { open: "9:00 AM", close: "6:00 PM" },
+    saturday: { open: "9:00 AM", close: "4:00 PM" },
+  },
+};
 
-  const set = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setForm((p) => ({ ...p, [k]: e.target.value }));
+export default function ContactPage() {
+  const [contact, setContact] = useState<ContactContent>(FALLBACK);
+  const [form,    setForm]    = useState<FormState>(EMPTY);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error,   setError]   = useState("");
+
+  // Fetch contact details from admin content API
+  useEffect(() => {
+    fetch("/api/content/contact")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setContact({ ...FALLBACK, ...data }); })
+      .catch(() => {/* use fallback */});
+  }, []);
+
+  const set = (k: keyof FormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setForm((p) => ({ ...p, [k]: e.target.value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,10 +67,9 @@ export default function ContactPage() {
     }
     setLoading(true);
     setError("");
-
     try {
       const res = await fetch("/api/contact", {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
@@ -60,6 +83,9 @@ export default function ContactPage() {
       setLoading(false);
     }
   };
+
+  const waLink = `https://wa.me/${contact.whatsapp ?? "919876543210"}?text=Hi%2C%20I%20have%20a%20question%20about%20Kavin%20Organics`;
+  const telLink = `tel:${(contact.phone ?? "+919876543210").replace(/\s/g, "")}`;
 
   return (
     <div className="min-h-screen bg-[#faf7f2]">
@@ -81,7 +107,7 @@ export default function ContactPage() {
         <div className="relative max-w-2xl mx-auto">
           <h1 className="text-3xl sm:text-4xl font-black text-white mb-3">Get in Touch 🌿</h1>
           <p className="text-[#a0c890] text-base leading-relaxed">
-            Have a question about our products or your order? We're here to help. Most queries are answered within a few hours.
+            Have a question about our products or your order? We're here to help.
           </p>
         </div>
       </div>
@@ -100,10 +126,7 @@ export default function ContactPage() {
                 <p className="text-[#5a5a48] text-base leading-relaxed mb-6">
                   Thank you for reaching out. We'll get back to you on WhatsApp or phone within a few hours.
                 </p>
-                <button
-                  onClick={() => setSuccess(false)}
-                  className="bg-[#3d6b35] hover:bg-[#2e5228] text-white font-bold px-6 py-3 rounded-xl transition-all"
-                >
+                <button onClick={() => setSuccess(false)} className="bg-[#3d6b35] hover:bg-[#2e5228] text-white font-bold px-6 py-3 rounded-xl transition-all">
                   Send Another Message
                 </button>
               </div>
@@ -112,29 +135,19 @@ export default function ContactPage() {
                 <h2 className="text-xl font-bold text-[#2a2a1e]">Send us a message</h2>
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 font-medium">
-                    {error}
-                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 font-medium">{error}</div>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text" value={form.name} onChange={set("name")}
-                      placeholder="e.g. Meenakshi Rajan"
+                    <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">Full Name <span className="text-red-500">*</span></label>
+                    <input type="text" value={form.name} onChange={set("name")} placeholder="e.g. Meenakshi Rajan"
                       className="w-full bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3 text-sm outline-none transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">
-                      Phone Number <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel" value={form.phone} onChange={set("phone")}
-                      placeholder="e.g. 98765 43210"
+                    <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">Phone Number <span className="text-red-500">*</span></label>
+                    <input type="tel" value={form.phone} onChange={set("phone")} placeholder="e.g. 98765 43210"
                       className="w-full bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3 text-sm outline-none transition-colors"
                     />
                   </div>
@@ -142,86 +155,73 @@ export default function ContactPage() {
 
                 <div>
                   <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">Email (optional)</label>
-                  <input
-                    type="email" value={form.email} onChange={set("email")}
-                    placeholder="your@email.com"
+                  <input type="email" value={form.email} onChange={set("email")} placeholder="your@email.com"
                     className="w-full bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3 text-sm outline-none transition-colors"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">Subject</label>
-                  <select
-                    value={form.subject} onChange={set("subject")}
+                  <select value={form.subject} onChange={set("subject")}
                     className="w-full bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3 text-sm outline-none transition-colors"
                   >
                     <option value="">Select a subject…</option>
-                    {SUBJECTS.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
+                    {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">
-                    Message <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    value={form.message} onChange={set("message")}
-                    placeholder="Tell us what you need help with…"
-                    rows={5}
+                  <label className="block text-sm font-bold text-[#2a2a1e] mb-1.5">Message <span className="text-red-500">*</span></label>
+                  <textarea value={form.message} onChange={set("message")} placeholder="Tell us what you need help with…" rows={5}
                     className="w-full bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3 text-sm outline-none transition-colors resize-none"
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
+                <button type="submit" disabled={loading}
                   className="flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] text-white font-bold py-4 rounded-xl transition-all shadow-md"
                 >
-                  {loading ? (
-                    <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Sending…</>
-                  ) : (
-                    <><Send size={18} />Send Message</>
-                  )}
+                  {loading
+                    ? <><span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />Sending…</>
+                    : <><Send size={18} />Send Message</>
+                  }
                 </button>
 
                 <p className="text-xs text-center text-[#a8a090]">
-                  Prefer to talk? Call us directly — <a href="tel:+919876543210" className="text-[#3d6b35] font-semibold">+91 98765 43210</a>
+                  Prefer to talk? Call us directly —{" "}
+                  <a href={telLink} className="text-[#3d6b35] font-semibold">{contact.phone}</a>
                 </p>
               </form>
             )}
           </div>
 
-          {/* ── RIGHT: Contact Info ── */}
+          {/* ── RIGHT: Contact Info (live from DB) ── */}
           <div className="w-full lg:w-80 shrink-0 flex flex-col gap-4">
+
             {/* Quick contact */}
             <div className="bg-[#1e3d18] rounded-2xl p-6 text-white">
               <h3 className="text-base font-bold mb-4 text-[#a0d878]">Quick Contact</h3>
 
-              <a href="tel:+919876543210" className="flex items-center gap-3 mb-4 group">
+              <a href={telLink} className="flex items-center gap-3 mb-4 group">
                 <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-colors">
                   <Phone size={18} className="text-[#7ab648]" />
                 </div>
                 <div>
                   <p className="text-xs text-white/50">Phone / WhatsApp</p>
-                  <p className="text-sm font-bold text-white">+91 98765 43210</p>
+                  <p className="text-sm font-bold text-white">{contact.phone}</p>
                 </div>
               </a>
 
-              <a href="mailto:hello@kavinorganics.in" className="flex items-center gap-3 mb-4 group">
+              <a href={`mailto:${contact.email}`} className="flex items-center gap-3 mb-4 group">
                 <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white/20 transition-colors">
                   <Mail size={18} className="text-[#7ab648]" />
                 </div>
                 <div>
                   <p className="text-xs text-white/50">Email</p>
-                  <p className="text-sm font-bold text-white">hello@kavinorganics.in</p>
+                  <p className="text-sm font-bold text-white">{contact.email}</p>
                 </div>
               </a>
 
-              <a
-                href="https://wa.me/919876543210?text=Hi%2C%20I%20have%20a%20question%20about%20Kavin%20Organics"
-                target="_blank" rel="noopener noreferrer"
+              <a href={waLink} target="_blank" rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 bg-[#25d366] hover:bg-[#20bc59] text-white font-bold py-3 rounded-xl transition-all text-sm mt-2"
               >
                 <MessageSquare size={16} />Chat on WhatsApp
@@ -230,19 +230,17 @@ export default function ContactPage() {
 
             {/* Address & Hours */}
             <div className="bg-white rounded-2xl border border-[#e8e0d0] p-5">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-9 h-9 bg-[#eef5ea] rounded-xl flex items-center justify-center shrink-0 mt-0.5">
-                  <MapPin size={16} className="text-[#3d6b35]" />
+              {contact.address && (
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-9 h-9 bg-[#eef5ea] rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin size={16} className="text-[#3d6b35]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#1e3d18] uppercase tracking-wide mb-0.5">Store Address</p>
+                    <p className="text-sm text-[#5a5a48] leading-relaxed">{contact.address}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-[#1e3d18] uppercase tracking-wide mb-0.5">Store Address</p>
-                  <p className="text-sm text-[#5a5a48] leading-relaxed">
-                    No. 45, Market Road,<br />
-                    Thiruchengode — 637211<br />
-                    Namakkal District, Tamil Nadu
-                  </p>
-                </div>
-              </div>
+              )}
 
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 bg-[#eef5ea] rounded-xl flex items-center justify-center shrink-0 mt-0.5">
@@ -252,20 +250,27 @@ export default function ContactPage() {
                   <p className="text-xs font-bold text-[#1e3d18] uppercase tracking-wide mb-1">Business Hours</p>
                   <div className="text-sm text-[#5a5a48] space-y-0.5">
                     <div className="flex justify-between gap-4">
-                      <span>Mon – Fri</span><span className="font-semibold text-[#2a2a1e]">9am – 6pm</span>
+                      <span>Mon – Fri</span>
+                      <span className="font-semibold text-[#2a2a1e]">
+                        {contact.hours?.weekdays?.open ?? "9:00 AM"} – {contact.hours?.weekdays?.close ?? "6:00 PM"}
+                      </span>
                     </div>
                     <div className="flex justify-between gap-4">
-                      <span>Saturday</span><span className="font-semibold text-[#2a2a1e]">9am – 4pm</span>
+                      <span>Saturday</span>
+                      <span className="font-semibold text-[#2a2a1e]">
+                        {contact.hours?.saturday?.open ?? "9:00 AM"} – {contact.hours?.saturday?.close ?? "4:00 PM"}
+                      </span>
                     </div>
                     <div className="flex justify-between gap-4">
-                      <span>Sunday</span><span className="font-semibold text-red-500">Closed</span>
+                      <span>Sunday</span>
+                      <span className="font-semibold text-red-500">Closed</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* FAQ hint */}
+            {/* Quick tips */}
             <div className="bg-[#fff8ee] border border-[#f0d080] rounded-2xl px-5 py-4 text-sm text-[#7a5c1e]">
               <p className="font-bold mb-1">💡 Common questions</p>
               <ul className="space-y-1 text-xs leading-relaxed">

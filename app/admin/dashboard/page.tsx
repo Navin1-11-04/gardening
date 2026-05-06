@@ -6,7 +6,7 @@ import {
   Package, ShoppingCart, Users, TrendingUp,
   AlertTriangle, ArrowRight, Leaf, Clock,
   CheckCircle2, XCircle, Truck, RefreshCw,
-  MessageSquare,
+  MessageSquare, IndianRupee, Calendar,
 } from "lucide-react";
 
 interface LiveData {
@@ -20,17 +20,25 @@ interface LiveData {
 }
 
 interface Stats {
-  totalProducts: number; totalOrders: number;
-  totalRevenue: number; totalCustomers: number; lowStockProducts: number;
+  totalProducts: number;
+  totalOrders: number;
+  totalRevenue: number;
+  pipelineRevenue: number;
+  pipelineOrders: number;
+  monthRevenue: number;
+  totalCustomers: number;
+  lowStockProducts: number;
+  statusBreakdown: Record<string, number>;
+  todayOrders: number;
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  delivered:  { label: "Delivered",  color: "bg-green-100 text-green-700",  icon: CheckCircle2 },
-  shipped:    { label: "Shipped",    color: "bg-blue-100 text-blue-700",    icon: Truck },
-  processing: { label: "Processing", color: "bg-amber-100 text-amber-700",  icon: Clock },
+  delivered:  { label: "Delivered",  color: "bg-green-100 text-green-700",   icon: CheckCircle2 },
+  shipped:    { label: "Shipped",    color: "bg-blue-100 text-blue-700",     icon: Truck },
+  processing: { label: "Processing", color: "bg-amber-100 text-amber-700",   icon: Clock },
   confirmed:  { label: "Confirmed",  color: "bg-purple-100 text-purple-700", icon: CheckCircle2 },
   pending:    { label: "Pending",    color: "bg-yellow-100 text-yellow-700", icon: Clock },
-  cancelled:  { label: "Cancelled", color: "bg-red-100 text-red-700",      icon: XCircle },
+  cancelled:  { label: "Cancelled",  color: "bg-red-100 text-red-700",       icon: XCircle },
 };
 
 function timeAgo(dateStr: string) {
@@ -41,6 +49,12 @@ function timeAgo(dateStr: string) {
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
+}
+
+function formatINR(val: number) {
+  if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
+  if (val >= 1000) return `₹${Math.round(val / 1000)}K`;
+  return `₹${Math.round(val)}`;
 }
 
 export default function AdminDashboard() {
@@ -57,7 +71,7 @@ export default function AdminDashboard() {
         fetch("/api/admin/dashboard/live"),
       ]);
       if (statsRes.ok) setStats(await statsRes.json());
-      if (liveRes.ok) setLive(await liveRes.json());
+      if (liveRes.ok)  setLive(await liveRes.json());
       setLastUpdated(new Date());
     } catch (e) {
       console.error("Dashboard fetch error:", e);
@@ -68,35 +82,44 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchAll();
-    // Auto-refresh every 2 minutes
     const id = setInterval(fetchAll, 120_000);
     return () => clearInterval(id);
   }, []);
 
   const statCards = [
     {
-      label: "Total Products", href: "/admin/products",
-      value: loading ? "—" : (stats?.totalProducts ?? 0),
-      icon: Package, color: "bg-[#eef7e6] text-[#3d6b35]",
-      subtext: "Active in store",
+      label: "Pipeline Revenue",
+      href: "/admin/orders",
+      value: loading ? "—" : formatINR(stats?.pipelineRevenue ?? 0),
+      icon: IndianRupee,
+      color: "bg-[#eef7e6] text-[#3d6b35]",
+      subtext: `${stats?.pipelineOrders ?? 0} active orders`,
+      tooltip: "All confirmed/processing/shipped orders",
     },
     {
-      label: "Total Orders", href: "/admin/orders",
+      label: "Delivered Revenue",
+      href: "/admin/analytics",
+      value: loading ? "—" : formatINR(stats?.totalRevenue ?? 0),
+      icon: TrendingUp,
+      color: "bg-amber-50 text-amber-600",
+      subtext: "Collected so far",
+      tooltip: "Revenue from delivered orders only",
+    },
+    {
+      label: "Total Orders",
+      href: "/admin/orders",
       value: loading ? "—" : (stats?.totalOrders ?? 0),
-      icon: ShoppingCart, color: "bg-blue-50 text-blue-600",
-      subtext: "All time",
+      icon: ShoppingCart,
+      color: "bg-blue-50 text-blue-600",
+      subtext: `${stats?.todayOrders ?? 0} today`,
     },
     {
-      label: "Customers", href: "/admin/orders",
-      value: loading ? "—" : (stats?.totalCustomers ?? 0),
-      icon: Users, color: "bg-purple-50 text-purple-600",
-      subtext: "Registered",
-    },
-    {
-      label: "Revenue", href: "/admin/analytics",
-      value: loading ? "—" : `₹${Math.round((stats?.totalRevenue ?? 0) / 1000)}K`,
-      icon: TrendingUp, color: "bg-amber-50 text-amber-600",
-      subtext: "From delivered orders",
+      label: "Low Stock",
+      href: "/admin/products",
+      value: loading ? "—" : (stats?.lowStockProducts ?? 0),
+      icon: Package,
+      color: (stats?.lowStockProducts ?? 0) > 0 ? "bg-red-50 text-red-600" : "bg-[#eef7e6] text-[#3d6b35]",
+      subtext: "Products need restock",
     },
   ];
 
@@ -114,7 +137,7 @@ export default function AdminDashboard() {
           </h2>
           {lastUpdated && (
             <p className="text-[#9ac880] text-xs mt-1">
-              Last updated: {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+              Updated: {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
             </p>
           )}
         </div>
@@ -144,13 +167,23 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* This month highlight */}
+      {!loading && (stats?.monthRevenue ?? 0) > 0 && (
+        <div className="bg-[#eef7e6] border border-[#b8d4a0] rounded-2xl px-5 py-4 flex items-center gap-3">
+          <Calendar size={18} className="text-[#3d6b35] shrink-0" />
+          <p className="text-sm text-[#1e3d18]">
+            <span className="font-bold">This month so far:</span> {formatINR(stats?.monthRevenue ?? 0)} across {(stats?.statusBreakdown?.confirmed ?? 0) + (stats?.statusBreakdown?.processing ?? 0) + (stats?.statusBreakdown?.shipped ?? 0) + (stats?.statusBreakdown?.delivered ?? 0)} orders
+          </p>
+        </div>
+      )}
+
       {/* Low stock warning */}
       {(stats?.lowStockProducts ?? 0) > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
           <AlertTriangle size={18} className="text-amber-600 shrink-0" />
           <p className="text-sm text-amber-800">
-            <span className="font-bold">{stats?.lowStockProducts} product{(stats?.lowStockProducts ?? 0) !== 1 ? "s" : ""}</span> running
-            low on stock.{" "}
+            <span className="font-bold">{stats?.lowStockProducts} product{(stats?.lowStockProducts ?? 0) !== 1 ? "s" : ""}</span>{" "}
+            running low on stock.{" "}
             <Link href="/admin/products" className="underline font-semibold">Review now →</Link>
           </p>
         </div>
@@ -169,7 +202,11 @@ export default function AdminDashboard() {
                   </div>
                   <ArrowRight size={16} className="text-[#b0c8a0] group-hover:text-[#3d6b35] group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <p className="text-2xl sm:text-3xl font-black text-[#1e3d18]">{card.value}</p>
+                <p className="text-2xl sm:text-3xl font-black text-[#1e3d18]">
+                  {loading
+                    ? <RefreshCw size={18} className="animate-spin text-[#3d6b35]" />
+                    : card.value}
+                </p>
                 <p className="text-sm font-semibold text-[#5a8a50] mt-1">{card.label}</p>
                 <p className="text-xs text-[#9ab890] mt-0.5">{card.subtext}</p>
               </div>
@@ -197,7 +234,7 @@ export default function AdminDashboard() {
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Recent orders — LIVE */}
+        {/* Recent orders */}
         <div className="lg:col-span-3 bg-white rounded-2xl border border-[#dce8d4] overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f4ed]">
             <h3 className="text-base font-bold text-[#1e3d18]">Recent Orders</h3>
@@ -205,7 +242,6 @@ export default function AdminDashboard() {
               View all <ArrowRight size={12} />
             </Link>
           </div>
-
           {loading ? (
             <div className="p-8 text-center">
               <RefreshCw size={18} className="animate-spin text-[#3d6b35] mx-auto mb-2" />
@@ -235,7 +271,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* Top products — LIVE */}
+        {/* Top products */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-[#dce8d4] overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f4ed]">
             <h3 className="text-base font-bold text-[#1e3d18]">Top Products</h3>
@@ -243,7 +279,6 @@ export default function AdminDashboard() {
               View all <ArrowRight size={12} />
             </Link>
           </div>
-
           {loading ? (
             <div className="p-8 text-center">
               <RefreshCw size={18} className="animate-spin text-[#3d6b35] mx-auto mb-2" />
@@ -261,7 +296,7 @@ export default function AdminDashboard() {
                     <p className="text-sm font-bold text-[#1e3d18] truncate">{p.name}</p>
                     <p className="text-xs text-[#7a9e6a]">{p.sales} sold</p>
                   </div>
-                  <p className="text-sm font-black text-[#3d6b35] shrink-0">₹{Math.round(p.revenue / 1000)}K</p>
+                  <p className="text-sm font-black text-[#3d6b35] shrink-0">{formatINR(p.revenue)}</p>
                 </div>
               ))}
             </div>
@@ -298,9 +333,9 @@ export default function AdminDashboard() {
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { title: "Add New Product", desc: "Seeds, pots, fertilizers & more", icon: Package, href: "/admin/products", color: "bg-[#eef7e6] border-[#c8e8b0]", iconColor: "bg-[#3d6b35] text-white" },
-          { title: "Manage Orders", desc: "Process & track deliveries", icon: ShoppingCart, href: "/admin/orders", color: "bg-blue-50 border-blue-200", iconColor: "bg-blue-600 text-white" },
-          { title: "Customer Messages", desc: "View contact form inquiries", icon: MessageSquare, href: "/admin/inquiries", color: "bg-purple-50 border-purple-200", iconColor: "bg-purple-600 text-white" },
+          { title: "Add New Product",    desc: "Seeds, pots, fertilizers & more", icon: Package,      href: "/admin/products",   color: "bg-[#eef7e6] border-[#c8e8b0]", iconColor: "bg-[#3d6b35] text-white" },
+          { title: "Manage Orders",      desc: "Process & track deliveries",       icon: ShoppingCart, href: "/admin/orders",     color: "bg-blue-50 border-blue-200",    iconColor: "bg-blue-600 text-white" },
+          { title: "Customer Messages",  desc: "View contact form inquiries",      icon: MessageSquare,href: "/admin/inquiries",  color: "bg-purple-50 border-purple-200",iconColor: "bg-purple-600 text-white" },
         ].map((action) => {
           const Icon = action.icon;
           return (

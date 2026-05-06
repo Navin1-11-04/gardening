@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ChevronRight, MapPin, CreditCard, CheckCircle2, Plus,
+  ChevronRight, MapPin, CreditCard, CheckCircle2, 
   Truck, ShieldCheck, Phone, Pencil, Check,
   Wallet, Smartphone, Building2, MessageSquare, RefreshCw,
 } from "lucide-react";
@@ -125,7 +125,7 @@ const AddressStep = ({
           <Field label="Phone Number" value={newAddressForm.phone}        onChange={set("phone")}        placeholder="e.g. 98765 43210"      type="tel" required />
         </div>
         <Field label="Address Line 1" value={newAddressForm.addressLine1} onChange={set("addressLine1")} placeholder="House no., Street, Area" required />
-        <Field label="Address Line 2" value={newAddressForm.addressLine2} onChange={set("addressLine2")} placeholder="Landmark (optional)" />
+        <Field label="Address Line 2 (optional)" value={newAddressForm.addressLine2} onChange={set("addressLine2")} placeholder="Landmark" />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <Field label="Pincode"     value={newAddressForm.pincode} onChange={set("pincode")} placeholder="6-digit pincode" required />
           <Field label="City / Town" value={newAddressForm.city}    onChange={set("city")}    placeholder="e.g. Namakkal"   required />
@@ -156,28 +156,25 @@ const AddressStep = ({
   );
 };
 
-// ─── OTP Step ─────────────────────────────────────────────────────────────────
+// ─── OTP Step — improved for elderly users ────────────────────────────────────
 
 const OtpStep = ({
   phone, onVerified, onBack,
 }: {
   phone: string; onVerified: () => void; onBack: () => void;
 }) => {
-  const [otp,          setOtp]          = useState("");
-  const [sending,      setSending]      = useState(false);
-  const [verifying,    setVerifying]    = useState(false);
-  const [sent,         setSent]         = useState(false);
-  const [countdown,    setCountdown]    = useState(0);
-  const [sendError,    setSendError]    = useState("");
-  const [verifyError,  setVerifyError]  = useState("");
+  const [otp,         setOtp]         = useState("");
+  const [sending,     setSending]     = useState(false);
+  const [verifying,   setVerifying]   = useState(false);
+  const [sent,        setSent]        = useState(false);
+  const [countdown,   setCountdown]   = useState(0);
+  const [sendError,   setSendError]   = useState("");
+  const [verifyError, setVerifyError] = useState("");
 
   const startCountdown = () => {
     setCountdown(30);
     const id = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) { clearInterval(id); return 0; }
-        return c - 1;
-      });
+      setCountdown((c) => { if (c <= 1) { clearInterval(id); return 0; } return c - 1; });
     }, 1000);
   };
 
@@ -192,18 +189,18 @@ const OtpStep = ({
         body: JSON.stringify({ phone }),
       });
       const data = await res.json();
-      if (!res.ok) { setSendError(data.error ?? "Failed to send OTP."); return; }
+      if (!res.ok) { setSendError(data.error ?? "Failed to send OTP. Please try again."); return; }
       setSent(true);
       startCountdown();
     } catch {
-      setSendError("Network error. Please try again.");
+      setSendError("Network error. Please check your connection and try again.");
     } finally {
       setSending(false);
     }
   };
 
   const handleVerify = async () => {
-    if (otp.length !== 6) { setVerifyError("Please enter the 6-digit code."); return; }
+    if (otp.length !== 6) { setVerifyError("Please enter the 6-digit code sent to your phone."); return; }
     setVerifying(true);
     setVerifyError("");
     try {
@@ -212,7 +209,16 @@ const OtpStep = ({
         body: JSON.stringify({ phone, otp }),
       });
       const data = await res.json();
-      if (!res.ok) { setVerifyError(data.error ?? "Incorrect OTP."); return; }
+      if (!res.ok) {
+        // Friendly message for common errors
+        if (data.error?.includes("expired")) {
+          setVerifyError("This code has expired. Please request a new one by clicking 'Resend code'.");
+          setSent(false); // Reset to show send button again
+        } else {
+          setVerifyError(data.error ?? "Incorrect code. Please check and try again.");
+        }
+        return;
+      }
       onVerified();
     } catch {
       setVerifyError("Network error. Please try again.");
@@ -229,7 +235,7 @@ const OtpStep = ({
         <p className="text-sm font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">Step 2</p>
         <h2 className="text-2xl sm:text-3xl font-bold text-[#2a2a1e] font-outfit">Verify Your Phone</h2>
         <p className="text-base text-[#7a7a68] mt-1">
-          We'll send a one-time code to <span className="font-bold text-[#2a2a1e]">{displayPhone}</span> to confirm your order.
+          We'll send a one-time code to confirm your order.
         </p>
       </div>
 
@@ -248,7 +254,11 @@ const OtpStep = ({
 
         {!sent ? (
           <>
-            {sendError && <p className="text-sm text-red-600 font-semibold bg-red-50 border border-red-200 rounded-xl px-4 py-3">{sendError}</p>}
+            {sendError && (
+              <div className="text-sm text-red-700 font-semibold bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                {sendError}
+              </div>
+            )}
             <button onClick={handleSendOtp} disabled={sending}
               className="w-full flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] text-white font-bold text-lg py-4 rounded-xl transition-all"
             >
@@ -257,41 +267,34 @@ const OtpStep = ({
                 : <><MessageSquare size={20} />Send Verification Code</>
               }
             </button>
-            <p className="text-xs text-center text-[#a8a090]">
-              You'll receive a free SMS with a 6-digit code. Standard message rates may apply.
+            <p className="text-sm text-center text-[#a8a090]">
+              You'll receive a free SMS with a 6-digit code.
             </p>
           </>
         ) : (
           <>
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-bold text-[#2a2a1e]">
-                ✅ Code sent to +91 {displayPhone}
-              </p>
-              <p className="text-xs text-[#7a7a68]">
-                Check your SMS inbox. The code expires in 10 minutes.
-              </p>
+            <div className="bg-[#eef5ea] border border-[#b8d4a0] rounded-xl px-4 py-3">
+              <p className="text-sm font-bold text-[#2a2a1e]">✅ Code sent to +91 {displayPhone}</p>
+              <p className="text-xs text-[#7a7a68] mt-0.5">Check your SMS inbox. The code expires in 10 minutes.</p>
             </div>
 
-            {/* OTP input — large digits for elderly users */}
+            {/* Large OTP input — easy for elderly users */}
             <div className="flex flex-col gap-2">
-              <label className="text-base font-bold text-[#2a2a1e]">Enter 6-digit code</label>
+              <label className="text-base font-bold text-[#2a2a1e]">Enter the 6-digit code from your SMS</label>
               <input
                 type="tel"
                 inputMode="numeric"
                 maxLength={6}
                 value={otp}
-                onChange={(e) => {
-                  setVerifyError("");
-                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
-                }}
-                placeholder="_ _ _ _ _ _"
-                className="w-full text-center text-3xl font-black tracking-[1rem] bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-4 outline-none transition-colors"
+                onChange={(e) => { setVerifyError(""); setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); }}
+                placeholder="______"
+                className="w-full text-center text-4xl font-black tracking-[1.2rem] bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-5 outline-none transition-colors"
                 autoFocus
               />
               {verifyError && (
-                <p className="text-sm text-red-600 font-semibold bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+                <div className="text-sm text-red-700 font-semibold bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                   {verifyError}
-                </p>
+                </div>
               )}
             </div>
 
@@ -304,20 +307,28 @@ const OtpStep = ({
               }
             </button>
 
-            {/* Resend */}
             <div className="text-center">
               {countdown > 0 ? (
-                <p className="text-sm text-[#a8a090]">Resend code in {countdown}s</p>
+                <p className="text-sm text-[#a8a090]">Resend available in {countdown}s</p>
               ) : (
                 <button onClick={handleSendOtp} disabled={sending}
-                  className="text-sm font-semibold text-[#3d6b35] hover:underline disabled:opacity-50"
+                  className="text-base font-semibold text-[#3d6b35] hover:underline disabled:opacity-50"
                 >
-                  {sending ? "Sending…" : "Resend code"}
+                  {sending ? "Sending…" : "📱 Resend code"}
                 </button>
               )}
             </div>
           </>
         )}
+      </div>
+
+      {/* Help line for elderly users */}
+      <div className="bg-[#faf7f2] border border-[#d4c9a8] rounded-2xl px-5 py-4 flex items-center gap-3">
+        <Phone size={18} className="text-[#3d6b35] shrink-0" />
+        <div>
+          <p className="text-sm font-bold text-[#2a2a1e]">Having trouble? Call us for help!</p>
+          <a href="tel:+919876543210" className="text-base font-bold text-[#3d6b35] hover:underline">+91 98765 43210</a>
+        </div>
       </div>
 
       <button onClick={onBack}
@@ -338,8 +349,8 @@ const PaymentStep = ({
   total: number; allowCOD: boolean; allowUPI: boolean; allowCard: boolean;
 }) => {
   const available = paymentMethods.filter((m) => {
-    if (m.id === "cod" && !allowCOD) return false;
-    if (m.id === "upi" && !allowUPI) return false;
+    if (m.id === "cod"  && !allowCOD)  return false;
+    if (m.id === "upi"  && !allowUPI)  return false;
     if (m.id === "card" && !allowCard) return false;
     return true;
   });
@@ -431,13 +442,14 @@ const ReviewStep = ({
         </p>
       </div>
 
+      {/* Address */}
       <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <MapPin size={18} className="text-[#3d6b35]" />
             <span className="text-base font-bold text-[#2a2a1e]">Delivering to</span>
           </div>
-          <button onClick={() => onBack()} className="text-sm font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
+          <button onClick={onBack} className="text-sm font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
             <Pencil size={13} />Change
           </button>
         </div>
@@ -450,6 +462,7 @@ const ReviewStep = ({
         </div>
       </div>
 
+      {/* Payment */}
       <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-3">
           <CreditCard size={18} className="text-[#3d6b35]" />
@@ -464,6 +477,7 @@ const ReviewStep = ({
         </div>
       </div>
 
+      {/* Items */}
       <div className="bg-white border border-[#e8e0d0] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[#e8e0d0]">
           <span className="text-base font-bold text-[#2a2a1e]">Order Items ({items.length})</span>
@@ -594,16 +608,18 @@ export default function CheckoutPage() {
   const FREE_DELIVERY_THRESHOLD = config.freeDeliveryThreshold;
   const DELIVERY_FEE            = config.deliveryFee;
 
-  const [step,           setStep]           = useState<Step>("address");
-  const [addressForm,    setAddressForm]    = useState<Address>(EMPTY_ADDRESS);
-  const [selectedPayment,setSelectedPayment]= useState("cod");
-  const [placing,        setPlacing]        = useState(false);
+  const [step,            setStep]            = useState<Step>("address");
+  const [addressForm,     setAddressForm]      = useState<Address>(EMPTY_ADDRESS);
+  const [selectedPayment, setSelectedPayment]  = useState("cod");
+  const [placing,         setPlacing]          = useState(false);
+  const [placeError,      setPlaceError]       = useState("");
 
   const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
   const total       = subtotal + deliveryFee;
 
   const handlePlaceOrder = async () => {
     setPlacing(true);
+    setPlaceError("");
     try {
       const res  = await fetch("/api/orders/create", {
         method: "POST",
@@ -617,12 +633,15 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         if (data.requiresOtp) {
-          // OTP cookie expired — send back to OTP step
+          // OTP cookie expired — send back to OTP step with message
           setStep("otp");
-          alert("Your verification has expired. Please verify your phone again.");
+          setPlaceError("Your verification expired. Please verify your phone again.");
+          setPlacing(false);
           return;
         }
-        throw new Error(data.error ?? "Order failed");
+        setPlaceError(data.error ?? "Order failed. Please try again.");
+        setPlacing(false);
+        return;
       }
 
       if (!data.paymentRequired) {
@@ -655,12 +674,12 @@ export default function CheckoutPage() {
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", () => {
         setPlacing(false);
-        alert("Payment failed. Please try again or use Cash on Delivery.");
+        setPlaceError("Payment failed. Please try again or choose Cash on Delivery.");
       });
       rzp.open();
     } catch (err: any) {
       console.error("Place order error:", err);
-      alert(err.message ?? "Something went wrong. Please try again or call us.");
+      setPlaceError(err.message ?? "Something went wrong. Please try again or call us.");
       setPlacing(false);
     }
   };
@@ -692,11 +711,19 @@ export default function CheckoutPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <StepBar current={step} />
+
+        {/* Global error (e.g. OTP expired on place order) */}
+        {placeError && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-sm text-red-700 font-semibold">
+            {placeError}
+          </div>
+        )}
+
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           <div className="flex-1 min-w-0">
             {step === "address" && (
               <AddressStep
-                onNext={() => setStep("otp")}
+                onNext={() => { setPlaceError(""); setStep("otp"); }}
                 newAddressForm={addressForm}
                 setNewAddressForm={setAddressForm}
               />
@@ -704,7 +731,7 @@ export default function CheckoutPage() {
             {step === "otp" && (
               <OtpStep
                 phone={addressForm.phone}
-                onVerified={() => setStep("payment")}
+                onVerified={() => { setPlaceError(""); setStep("payment"); }}
                 onBack={() => setStep("address")}
               />
             )}

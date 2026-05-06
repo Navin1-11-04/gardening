@@ -6,7 +6,8 @@ import Link from "next/link";
 import {
   LayoutDashboard, Package, ShoppingCart, BarChart3,
   Settings, LogOut, ChevronLeft, ChevronRight, Leaf,
-  Bell, Menu, TrendingUp, Tag, MessageSquare, BookOpen, FileText,
+  Bell, Menu, TrendingUp, Tag, MessageSquare, BookOpen,
+  FileText, Ticket,
 } from "lucide-react";
 
 interface AdminLayoutProps { children: ReactNode; }
@@ -16,6 +17,7 @@ const navItems = [
   { label: "Products",   href: "/admin/products",   icon: Package,         description: "Manage inventory" },
   { label: "Categories", href: "/admin/categories", icon: Tag,             description: "Product categories" },
   { label: "Orders",     href: "/admin/orders",     icon: ShoppingCart,    description: "Customer orders" },
+  { label: "Coupons",    href: "/admin/coupons",    icon: Ticket,          description: "Discount codes" },
   { label: "Messages",   href: "/admin/inquiries",  icon: MessageSquare,   description: "Contact inquiries", badge: true },
   { label: "Guides",     href: "/admin/guides",     icon: BookOpen,        description: "Gardening articles" },
   { label: "Content",    href: "/admin/content",    icon: FileText,        description: "Edit page content" },
@@ -69,12 +71,12 @@ function AdminShell({ children }: { children: ReactNode }) {
         {!collapsed && (
           <div>
             <p className="text-white font-black text-sm tracking-wider leading-none">KAVIN</p>
-            <p className="text-[#7ab648] text-[10px] font-bold tracking-[0.25em] leading-none mt-0.5">ORGANICS</p>
+            <p className="text-[#7ab648] text-[10px] font-bold tracking-[0.25em] leading-none mt-0.5">ADMIN</p>
           </div>
         )}
       </div>
 
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const Icon   = item.icon;
           const active = pathname.startsWith(item.href);
@@ -83,7 +85,9 @@ function AdminShell({ children }: { children: ReactNode }) {
             <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined}
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
-                active ? "bg-[#7ab648] text-white shadow-md shadow-[#7ab648]/30" : "text-[#a0c890] hover:bg-[#2d5a25] hover:text-white"
+                active
+                  ? "bg-[#7ab648] text-white shadow-md shadow-[#7ab648]/30"
+                  : "text-[#a0c890] hover:bg-[#2d5a25] hover:text-white"
               }`}
             >
               <div className="relative shrink-0">
@@ -97,7 +101,11 @@ function AdminShell({ children }: { children: ReactNode }) {
               {!collapsed && (
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold leading-none">{item.label}</p>
-                  {!active && <p className="text-[10px] text-[#5a8a50] group-hover:text-white/60 mt-0.5 leading-none">{item.description}</p>}
+                  {!active && (
+                    <p className="text-[10px] text-[#5a8a50] group-hover:text-white/60 mt-0.5 leading-none">
+                      {item.description}
+                    </p>
+                  )}
                 </div>
               )}
               {active && !collapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />}
@@ -106,18 +114,28 @@ function AdminShell({ children }: { children: ReactNode }) {
         })}
       </nav>
 
-      <div className="p-3 border-t border-[#2d5a25] space-y-1">
-        <button onClick={() => setCollapsed(!collapsed)}
+      <div className="p-3 border-t border-[#2d5a25] space-y-0.5">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
           className="hidden lg:flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-[#a0c890] hover:bg-[#2d5a25] hover:text-white transition-all text-sm"
         >
-          {collapsed ? <ChevronRight size={18} className="shrink-0" /> : <><ChevronLeft size={18} className="shrink-0" /><span className="font-medium">Collapse</span></>}
+          {collapsed
+            ? <ChevronRight size={18} className="shrink-0" />
+            : <><ChevronLeft size={18} className="shrink-0" /><span className="font-medium">Collapse</span></>
+          }
         </button>
         {!collapsed && (
-          <Link href="/" target="_blank" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#a0c890] hover:bg-[#2d5a25] hover:text-white transition-all text-sm">
-            <TrendingUp size={18} className="shrink-0 text-[#7ab648]" /><span className="font-medium">View Store</span>
+          <Link href="/" target="_blank"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#a0c890] hover:bg-[#2d5a25] hover:text-white transition-all text-sm"
+          >
+            <TrendingUp size={18} className="shrink-0 text-[#7ab648]" />
+            <span className="font-medium">View Store</span>
           </Link>
         )}
-        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#a0c890] hover:bg-red-900/40 hover:text-red-300 transition-all text-sm">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#a0c890] hover:bg-red-900/40 hover:text-red-300 transition-all text-sm"
+        >
           <LogOut size={18} className="shrink-0" />
           {!collapsed && <span className="font-medium">Logout</span>}
         </button>
@@ -127,21 +145,30 @@ function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen bg-[#f0f4ed] overflow-hidden">
+      {/* Desktop sidebar */}
       <aside className={`hidden lg:flex flex-col ${collapsed ? "w-17" : "w-60"} bg-[#1e3d18] shrink-0 transition-all duration-300 ease-in-out`}>
         <SidebarContent />
       </aside>
 
+      {/* Mobile sidebar */}
       {mobileOpen && (
         <>
           <div className="lg:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setMobileOpen(false)} />
-          <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-64 bg-[#1e3d18] z-50 flex flex-col"><SidebarContent /></aside>
+          <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-64 bg-[#1e3d18] z-50 flex flex-col">
+            <SidebarContent />
+          </aside>
         </>
       )}
 
+      {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top bar */}
         <header className="bg-white border-b border-[#dce8d4] px-4 sm:px-6 py-3.5 flex items-center justify-between shrink-0 shadow-sm">
           <div className="flex items-center gap-3">
-            <button onClick={() => setMobileOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-[#f0f4ed] text-[#3d6b35] transition-colors">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="lg:hidden p-2 rounded-lg hover:bg-[#f0f4ed] text-[#3d6b35] transition-colors"
+            >
               <Menu size={20} />
             </button>
             <div>
@@ -153,7 +180,9 @@ function AdminShell({ children }: { children: ReactNode }) {
             <span className="hidden sm:block text-sm font-mono text-[#5a8a50] bg-[#f0f4ed] px-3 py-1.5 rounded-lg">{time}</span>
             <Link href="/admin/inquiries" className="relative p-2 rounded-lg hover:bg-[#f0f4ed] text-[#5a8a50] transition-colors">
               <Bell size={18} />
-              {newMessages > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />}
+              {newMessages > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+              )}
             </Link>
             <div className="flex items-center gap-2.5 bg-[#f0f4ed] rounded-xl px-3 py-1.5">
               <div className="w-7 h-7 rounded-lg bg-[#3d6b35] flex items-center justify-center">
@@ -166,6 +195,8 @@ function AdminShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
+
+        {/* Page content */}
         <main className="flex-1 overflow-auto p-4 sm:p-6">{children}</main>
       </div>
     </div>

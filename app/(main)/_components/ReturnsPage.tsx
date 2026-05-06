@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { ChevronRight, RotateCcw, Phone, CheckCircle, Clock, ShieldCheck } from "lucide-react";
 
-const steps = [
-  { num: "1", title: "Call or message us", desc: 'Contact us within 7 days of delivery. Call +91 98765 43210 or WhatsApp us. Have your Order ID ready — it\'s in your order confirmation message.' },
-  { num: "2", title: "We arrange pickup", desc: "We will arrange for our delivery partner to collect the item from your home. You don't need to travel anywhere or find a courier." },
-  { num: "3", title: "Item is inspected", desc: "Once we receive the returned item, our team inspects it within 1 business day." },
-  { num: "4", title: "Refund is processed", desc: "Your refund is issued within 3–5 business days — back to your original payment method, or via UPI/bank transfer for COD orders." },
-];
+async function getReturnsContent() {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/content/returns`, {
+      next: { revalidate: 60 },
+    });
+    if (res.ok) return await res.json();
+  } catch {}
+  return null;
+}
 
-const eligible = [
+const FALLBACK_ELIGIBLE = [
   "Product is defective or damaged on arrival",
   "Wrong product was delivered",
   "Product is significantly different from the description",
@@ -16,7 +20,7 @@ const eligible = [
   "You changed your mind (within 7 days, product unused and in original packaging)",
 ];
 
-const notEligible = [
+const FALLBACK_NOT_ELIGIBLE = [
   "Products returned after 7 days of delivery",
   "Used products (other than defective)",
   "Seeds where poor germination is due to growing conditions, not seed quality",
@@ -24,10 +28,23 @@ const notEligible = [
   "Perishable or opened soil media (unless defective)",
 ];
 
-export default function ReturnsPage() {
+const DEFAULT_STEPS = [
+  { num: "1", title: "Call or message us",   desc: "Contact us within 7 days of delivery. Call +91 98765 43210 or WhatsApp us. Have your Order ID ready." },
+  { num: "2", title: "We arrange pickup",     desc: "We will arrange for our delivery partner to collect the item from your home. You don't need to go anywhere." },
+  { num: "3", title: "Item is inspected",     desc: "Once we receive the returned item, our team inspects it within 1 business day." },
+  { num: "4", title: "Refund is processed",   desc: "Your refund is issued within 3–5 business days — back to your original payment method, or via UPI/bank transfer for COD orders." },
+];
+
+export default async function ReturnsPage() {
+  const content     = await getReturnsContent();
+  const windowDays  = content?.windowDays  ?? 7;
+  const refundDays  = content?.refundDays  ?? "3–5 business days";
+  const eligible    = content?.eligible?.length    ? content.eligible    : FALLBACK_ELIGIBLE;
+  const notEligible = content?.notEligible?.length ? content.notEligible : FALLBACK_NOT_ELIGIBLE;
+  const steps       = content?.process?.length     ? content.process     : DEFAULT_STEPS;
+
   return (
     <div className="min-h-screen bg-[#faf7f2]">
-
       {/* Breadcrumb */}
       <div className="bg-white border-b border-[#e8e0d0]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-2 text-sm">
@@ -60,9 +77,9 @@ export default function ReturnsPage() {
         {/* Key promise */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { icon: "📅", title: "7-Day Returns", desc: "Return any product within 7 days of delivery." },
-            { icon: "🏠", title: "We Pick It Up", desc: "Our courier collects from your home — no hassle." },
-            { icon: "💰", title: "Full Refund", desc: "You get 100% of what you paid — no deductions." },
+            { icon: "📅", title: `${windowDays}-Day Returns`, desc: `Return any product within ${windowDays} days of delivery.` },
+            { icon: "🏠", title: "We Pick It Up",             desc: "Our courier collects from your home — no hassle." },
+            { icon: "💰", title: "Full Refund",               desc: "You get 100% of what you paid — no deductions." },
           ].map(({ icon, title, desc }) => (
             <div key={title} className="bg-[#eef5ea] border border-[#b8d4a0] rounded-2xl p-5 text-center">
               <div className="text-3xl mb-3">{icon}</div>
@@ -76,11 +93,11 @@ export default function ReturnsPage() {
         <div className="bg-white rounded-2xl border border-[#e8e0d0] p-5 sm:p-6">
           <h2 className="text-xl font-bold text-[#2a2a1e] mb-6">How to Return a Product</h2>
           <div className="flex flex-col gap-5">
-            {steps.map((step, i) => (
+            {steps.map((step: any, i: number) => (
               <div key={i} className="flex items-start gap-4">
                 <div className="relative shrink-0">
                   <div className="w-10 h-10 rounded-full bg-[#3d6b35] text-white font-black text-base flex items-center justify-center">
-                    {step.num}
+                    {step.num ?? step.step ?? (i + 1)}
                   </div>
                   {i < steps.length - 1 && (
                     <div className="absolute left-1/2 top-10 w-0.5 h-5 bg-[#b8d4a0] -translate-x-1/2" />
@@ -93,11 +110,9 @@ export default function ReturnsPage() {
               </div>
             ))}
           </div>
-
           <div className="mt-6 flex flex-col sm:flex-row gap-3">
             <a href="tel:+919876543210" className="flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#335c2c] text-white font-bold text-base px-6 py-3.5 rounded-xl transition-colors">
-              <Phone size={18} />
-              Call to Start a Return
+              <Phone size={18} />Call to Start a Return
             </a>
             <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-white hover:bg-[#faf7f2] border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#3d6b35] font-bold text-base px-6 py-3.5 rounded-xl transition-colors">
               WhatsApp Us
@@ -113,17 +128,17 @@ export default function ReturnsPage() {
             </div>
             <h2 className="text-xl font-bold text-[#2a2a1e]">When Will I Get My Refund?</h2>
           </div>
-          <div className="flex flex-col gap-4 text-base sm:text-lg text-[#3a3a2e] leading-relaxed">
-            <p>Once we receive your returned item, we inspect it and process your refund within <strong className="text-[#2a2a1e]">3 to 5 business days</strong>.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-[#faf7f2] border border-[#e8e0d0] rounded-xl p-4">
-                <p className="text-base font-bold text-[#2a2a1e] mb-1">Online payment (UPI, Card)</p>
-                <p className="text-sm text-[#5a5a48] leading-snug">Refund goes back to the same payment method used at checkout. Usually takes 3–5 working days to appear.</p>
-              </div>
-              <div className="bg-[#faf7f2] border border-[#e8e0d0] rounded-xl p-4">
-                <p className="text-base font-bold text-[#2a2a1e] mb-1">Cash on Delivery orders</p>
-                <p className="text-sm text-[#5a5a48] leading-snug">Refund is sent to your bank account or UPI ID. We will ask for your details when you contact us.</p>
-              </div>
+          <p className="text-base sm:text-lg text-[#3a3a2e] leading-relaxed mb-4">
+            Once we receive your returned item, we inspect it and process your refund within <strong className="text-[#2a2a1e]">{refundDays}</strong>.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-[#faf7f2] border border-[#e8e0d0] rounded-xl p-4">
+              <p className="text-base font-bold text-[#2a2a1e] mb-1">Online payment (UPI, Card)</p>
+              <p className="text-sm text-[#5a5a48] leading-snug">Refund goes back to the same payment method. Usually {refundDays} to appear.</p>
+            </div>
+            <div className="bg-[#faf7f2] border border-[#e8e0d0] rounded-xl p-4">
+              <p className="text-base font-bold text-[#2a2a1e] mb-1">Cash on Delivery orders</p>
+              <p className="text-sm text-[#5a5a48] leading-snug">Refund is sent to your bank account or UPI ID. We will ask for your details when you contact us.</p>
             </div>
           </div>
         </div>
@@ -136,7 +151,7 @@ export default function ReturnsPage() {
               <h2 className="text-lg font-bold text-[#2a2a1e]">What Can Be Returned</h2>
             </div>
             <ul className="flex flex-col gap-3">
-              {eligible.map((item) => (
+              {eligible.map((item: string) => (
                 <li key={item} className="flex items-start gap-3">
                   <CheckCircle size={16} className="text-[#3d6b35] shrink-0 mt-0.5" />
                   <span className="text-sm sm:text-base text-[#3a3a2e] leading-snug">{item}</span>
@@ -144,14 +159,13 @@ export default function ReturnsPage() {
               ))}
             </ul>
           </div>
-
           <div className="bg-white rounded-2xl border border-[#e8e0d0] p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-lg">⚠️</span>
               <h2 className="text-lg font-bold text-[#2a2a1e]">What Cannot Be Returned</h2>
             </div>
             <ul className="flex flex-col gap-3">
-              {notEligible.map((item) => (
+              {notEligible.map((item: string) => (
                 <li key={item} className="flex items-start gap-3">
                   <span className="w-4 h-4 shrink-0 mt-0.5 text-[#c0392b] text-base leading-none">✕</span>
                   <span className="text-sm sm:text-base text-[#3a3a2e] leading-snug">{item}</span>
@@ -165,11 +179,10 @@ export default function ReturnsPage() {
         <div className="bg-[#fff8ee] border border-[#f0d080] rounded-2xl p-5 sm:p-6">
           <p className="text-lg font-bold text-[#7a5c1e] mb-3">Received a damaged or wrong product?</p>
           <p className="text-base text-[#7a5c1e] leading-relaxed mb-4">
-            We are very sorry if that happened. Please take a clear photo of the product and call or WhatsApp us at <strong>+91 98765 43210</strong> within <strong>48 hours of delivery</strong>. We will immediately arrange a free replacement — no questions asked.
+            We are very sorry if that happened. Please take a clear photo of the product and call or WhatsApp us at <strong>+91 98765 43210</strong> within <strong>48 hours of delivery</strong>. We will immediately arrange a free replacement.
           </p>
           <a href="tel:+919876543210" className="inline-flex items-center gap-2 text-base font-bold text-[#7a5c1e] hover:underline">
-            <Phone size={16} />
-            Call +91 98765 43210
+            <Phone size={16} />Call +91 98765 43210
           </a>
         </div>
 
@@ -180,7 +193,7 @@ export default function ReturnsPage() {
             Seeds are living products and their germination depends on growing conditions — soil quality, water, sunlight, temperature, and care. We cannot guarantee germination in all conditions, but we do guarantee that every seed packet we sell is fresh and from a trusted source.
           </p>
           <p className="text-base sm:text-lg text-[#3a3a2e] leading-relaxed mt-4">
-            If you believe a seed batch was genuinely defective, please contact us and we will assess it fairly. We always err on the side of our customers.
+            If you believe a seed batch was genuinely defective, please contact us and we will assess it fairly.
           </p>
         </div>
 
@@ -188,8 +201,8 @@ export default function ReturnsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: "Shipping & Delivery", href: "/shipping", desc: "Delivery times and charges", icon: "🚚" },
-            { label: "FAQs", href: "/faq", desc: "Return & refund questions", icon: "❓" },
-            { label: "Contact Us", href: "/contact", desc: "Talk to our team directly", icon: "📞" },
+            { label: "FAQs",                href: "/faq",      desc: "Return & refund questions",  icon: "❓" },
+            { label: "Contact Us",          href: "/contact",  desc: "Talk to our team directly",  icon: "📞" },
           ].map((link) => (
             <Link key={link.href} href={link.href} className="flex items-start gap-3 bg-white rounded-2xl border border-[#e8e0d0] hover:border-[#b8d4a0] hover:shadow-sm p-4 transition-all group">
               <span className="text-2xl shrink-0">{link.icon}</span>

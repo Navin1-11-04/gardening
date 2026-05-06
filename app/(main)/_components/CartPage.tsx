@@ -5,18 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Minus, Plus, ChevronRight, Tag, Truck,
-  ShieldCheck, Phone, ShoppingBag, ArrowRight, X,
+  ShieldCheck, Phone, ShoppingBag, ArrowRight, X, RefreshCw,
 } from "lucide-react";
 import { CartItem, useCart } from "../_context/CartContext";
 import { useStoreConfig } from "@/lib/useStoreConfig";
 
-const VALID_COUPONS: Record<string, number> = {
-  GARDEN10: 10,
-  KAVIN20: 20,
-  GREEN15: 15,
-};
-
-// ─── Cart Item Row ────────────────────────────────────────────────────────────
+// ─── Cart Item Row ─────────────────────────────────────────────────────────────
 
 const CartItemRow = ({
   item, onQtyChange, onRemove,
@@ -27,8 +21,7 @@ const CartItemRow = ({
 }) => (
   <tr className="border-b border-[#e8e0d0] hover:bg-[#faf7f2] transition-colors">
     <td className="py-4 px-2 text-center">
-      <button
-        onClick={() => onRemove(item.id)}
+      <button onClick={() => onRemove(item.id)}
         className="inline-flex items-center justify-center w-6 h-6 text-[#c0392b] hover:bg-red-50 rounded transition-colors"
       >×</button>
     </td>
@@ -46,9 +39,7 @@ const CartItemRow = ({
         </Link>
         <div className="min-w-0">
           <Link href={`/shop/product/${item.id}`}>
-            <h3 className="text-sm font-semibold text-[#2a2a1e] hover:text-[#3d6b35] transition-colors line-clamp-2">
-              {item.name}
-            </h3>
+            <h3 className="text-sm font-semibold text-[#2a2a1e] hover:text-[#3d6b35] transition-colors line-clamp-2">{item.name}</h3>
           </Link>
           <p className="text-xs text-[#7a7a68]">{item.subtitle}</p>
         </div>
@@ -76,13 +67,9 @@ const CartItemRow = ({
       </div>
     </td>
     <td className="py-4 px-3 text-right">
-      <p className="font-bold text-[#3d6b35] text-lg">
-        ₹{(item.price * item.quantity).toLocaleString("en-IN")}
-      </p>
+      <p className="font-bold text-[#3d6b35] text-lg">₹{(item.price * item.quantity).toLocaleString("en-IN")}</p>
       {item.originalPrice && (
-        <p className="text-xs text-[#a8a090] line-through">
-          ₹{(item.originalPrice * item.quantity).toLocaleString("en-IN")}
-        </p>
+        <p className="text-xs text-[#a8a090] line-through">₹{(item.originalPrice * item.quantity).toLocaleString("en-IN")}</p>
       )}
     </td>
   </tr>
@@ -92,23 +79,24 @@ const CartItemRow = ({
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, addItem } = useCart();
-  const { config } = useStoreConfig();          // ← live from DB
+  const { config } = useStoreConfig();
   const FREE_DELIVERY_THRESHOLD = config.freeDeliveryThreshold;
   const DELIVERY_FEE            = config.deliveryFee;
 
-  const [couponCode,    setCouponCode]    = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
-  const [couponError,   setCouponError]   = useState("");
-  const [removedItem,   setRemovedItem]   = useState<CartItem | null>(null);
-  const [undoBuffer,    setUndoBuffer]    = useState<CartItem | null>(null);
-  const [undoTimer,     setUndoTimer]     = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [couponCode,      setCouponCode]      = useState("");
+  const [appliedCoupon,   setAppliedCoupon]   = useState<{ code: string; discount: number; description?: string } | null>(null);
+  const [couponError,     setCouponError]      = useState("");
+  const [couponLoading,   setCouponLoading]    = useState(false);
+  const [removedItem,     setRemovedItem]      = useState<CartItem | null>(null);
+  const [undoBuffer,      setUndoBuffer]       = useState<CartItem | null>(null);
+  const [undoTimer,       setUndoTimer]        = useState<ReturnType<typeof setTimeout> | null>(null);
 
-  const subtotal    = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const savings     = items.reduce((s, i) => s + ((i.originalPrice ?? i.price) - i.price) * i.quantity, 0);
+  const subtotal       = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const savings        = items.reduce((s, i) => s + ((i.originalPrice ?? i.price) - i.price) * i.quantity, 0);
   const couponDiscount = appliedCoupon ? Math.round((subtotal * appliedCoupon.discount) / 100) : 0;
-  const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
-  const total       = subtotal - couponDiscount + deliveryFee;
-  const amountToFree = FREE_DELIVERY_THRESHOLD - subtotal;
+  const deliveryFee    = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+  const total          = subtotal - couponDiscount + deliveryFee;
+  const amountToFree   = FREE_DELIVERY_THRESHOLD - subtotal;
 
   const handleRemove = (id: number) => {
     const item = items.find((i) => i.id === id);
@@ -135,15 +123,34 @@ export default function CartPage() {
     setRemovedItem(null); setUndoBuffer(null);
   };
 
-  const handleApplyCoupon = () => {
+  // Validate coupon via API (DB-managed, with fallback to hardcoded)
+  const handleApplyCoupon = async () => {
     const code = couponCode.trim().toUpperCase();
     if (!code) { setCouponError("Please enter a coupon code."); return; }
-    if (VALID_COUPONS[code]) {
-      setAppliedCoupon({ code, discount: VALID_COUPONS[code] });
+
+    setCouponLoading(true);
+    setCouponError("");
+
+    try {
+      const res  = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, orderTotal: subtotal }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setCouponError(data.error ?? "Invalid coupon code. Please try again.");
+        setAppliedCoupon(null);
+        return;
+      }
+
+      setAppliedCoupon({ code: data.code, discount: data.discount, description: data.description });
       setCouponError("");
-    } else {
-      setCouponError("Invalid coupon code. Please try again.");
-      setAppliedCoupon(null);
+    } catch {
+      setCouponError("Could not validate coupon. Please try again.");
+    } finally {
+      setCouponLoading(false);
     }
   };
 
@@ -192,9 +199,7 @@ export default function CartPage() {
               <p className="text-sm font-bold text-[#7a5c1e]">
                 🚚 Add ₹{amountToFree} more for <span className="text-[#3d6b35]">FREE delivery!</span>
               </p>
-              <span className="text-xs font-semibold text-[#a07820]">
-                ₹{subtotal} / ₹{FREE_DELIVERY_THRESHOLD}
-              </span>
+              <span className="text-xs font-semibold text-[#a07820]">₹{subtotal} / ₹{FREE_DELIVERY_THRESHOLD}</span>
             </div>
             <div className="h-2.5 bg-[#f0e0a0] rounded-full overflow-hidden">
               <div
@@ -205,9 +210,7 @@ export default function CartPage() {
           </div>
         ) : (
           <div className="mb-5 bg-[#eef5ea] border border-[#b8d4a0] rounded-2xl px-4 py-3.5">
-            <p className="text-sm font-bold text-[#3d6b35]">
-              🎉 You've unlocked <span className="underline">FREE delivery!</span>
-            </p>
+            <p className="text-sm font-bold text-[#3d6b35]">🎉 You've unlocked <span className="underline">FREE delivery!</span></p>
           </div>
         )}
 
@@ -302,10 +305,8 @@ export default function CartPage() {
                     </span>
                   </div>
                   <div className="flex gap-2 justify-center mt-4 flex-wrap">
-                    {["VISA", "Mastercard", "UPI", "G Pay", "Net Banking"].map((p) => (
-                      <span key={p} className="border border-[#4a4a38] bg-[#3a3a2e] px-3 py-2 rounded text-[11px] text-[#c8c8b0] font-bold">
-                        {p}
-                      </span>
+                    {["VISA", "Mastercard", "UPI", "G Pay"].map((p) => (
+                      <span key={p} className="border border-[#4a4a38] bg-[#3a3a2e] px-3 py-2 rounded text-[11px] text-[#c8c8b0] font-bold">{p}</span>
                     ))}
                   </div>
                 </div>
@@ -315,6 +316,7 @@ export default function CartPage() {
 
           {/* Coupon + Help */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Coupon — validated via API */}
             <div className="bg-white rounded-lg border border-[#e8e0d0] p-4">
               <div className="flex items-center gap-2 mb-4 bg-[#f0f7eb] rounded-lg p-3">
                 <Tag size={18} className="text-[#3d6b35]" />
@@ -325,8 +327,11 @@ export default function CartPage() {
                   <div>
                     <p className="text-xs font-semibold text-[#3d6b35]">"{appliedCoupon.code}" applied!</p>
                     <p className="text-xs text-[#5a5a48] mt-0.5">
-                      {appliedCoupon.discount}% off — saving ₹{couponDiscount}
+                      {appliedCoupon.discount}% off — saving ₹{couponDiscount.toLocaleString("en-IN")}
                     </p>
+                    {appliedCoupon.description && (
+                      <p className="text-xs text-[#7a9e6a] mt-0.5">{appliedCoupon.description}</p>
+                    )}
                   </div>
                   <button onClick={handleRemoveCoupon} className="p-1 rounded-lg hover:bg-white transition-colors">
                     <X size={14} className="text-[#7a7a68]" />
@@ -336,25 +341,26 @@ export default function CartPage() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Enter code (e.g. GARDEN10)"
+                    placeholder="Enter coupon code"
                     value={couponCode}
                     onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
                     onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
-                    className="flex-1 bg-gray-50 border-2 border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-[#3d6b35] transition-colors font-medium"
+                    className="flex-1 bg-gray-50 border-2 border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-[#3d6b35] transition-colors font-medium uppercase"
                   />
-                  <button onClick={handleApplyCoupon}
-                    className="bg-[#3d6b35] hover:bg-[#335c2c] text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap"
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    className="bg-[#3d6b35] hover:bg-[#335c2c] disabled:bg-[#a8c890] text-white font-semibold text-xs px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5"
                   >
+                    {couponLoading ? <RefreshCw size={14} className="animate-spin" /> : null}
                     Apply
                   </button>
                 </div>
               )}
               {couponError && <p className="text-xs text-red-600 font-bold mt-2">{couponError}</p>}
-              {!appliedCoupon && (
-                <p className="text-xs font-medium text-gray-600 mt-2.5">Try: GARDEN10, KAVIN20, or GREEN15</p>
-              )}
             </div>
 
+            {/* Help */}
             <div className="bg-white border border-[#e8e0d0] rounded-lg px-4 py-4 flex items-start gap-3">
               <div className="bg-[#f0f7eb] rounded-lg p-2.5 shrink-0">
                 <Phone size={18} className="text-[#3d6b35]" />
