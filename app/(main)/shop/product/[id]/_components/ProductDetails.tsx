@@ -11,36 +11,26 @@ import {
 import { useCart } from "@/app/(main)/_context/CartContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { Product } from "@/data/Product";
-
-// ─── Mock reviews ─────────────────────────────────────────────────────────────
-
-const mockReviews = [
-  { id: 1, name: "Meenakshi R.", rating: 5, date: "12 Mar 2025", comment: "Excellent quality! My plants have never looked healthier. Very happy with this purchase.", verified: true },
-  { id: 2, name: "Rajan K.",     rating: 5, date: "28 Feb 2025", comment: "Good product. Delivered on time and the packaging was neat. Will order again.", verified: true },
-  { id: 3, name: "Sumathi P.",   rating: 4, date: "10 Feb 2025", comment: "Works well for my terrace garden. The plants are growing nicely since I started using this.", verified: true },
-];
-
-// ─── Stars ────────────────────────────────────────────────────────────────────
-
-const Stars = ({ rating, size = 14 }: { rating: number; size?: number }) => (
-  <div className="flex items-center gap-0.5">
-    {[1, 2, 3, 4, 5].map((s) => (
-      <Star key={s} size={size} className={s <= Math.round(rating) ? "text-[#d4a017] fill-[#d4a017]" : "text-[#d0c8b8]"} />
-    ))}
-  </div>
-);
+import ProductReviews from "@/app/(main)/_components/ProductReviews";
+import WhatsAppOrderButton from "@/app/(main)/_components/WhatsAppOrderButton";
 
 // ─── Accordion ────────────────────────────────────────────────────────────────
 
-const AccordionBlock = ({ title, children }: { title: string; children: React.ReactNode }) => {
-  const [open, setOpen] = useState(true);
+const AccordionBlock = ({ title, children, defaultOpen = true }: {
+  title: string; children: React.ReactNode; defaultOpen?: boolean;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border border-[#e8e0d0] rounded-2xl overflow-hidden">
-      <button onClick={() => setOpen(!open)}
+      <button
+        onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 sm:px-5 py-4 bg-white hover:bg-[#faf7f2] transition-colors"
       >
         <span className="text-base sm:text-lg font-bold text-[#2a2a1e]">{title}</span>
-        {open ? <ChevronUp size={18} className="text-[#7a7a68] shrink-0" /> : <ChevronDown size={18} className="text-[#7a7a68] shrink-0" />}
+        {open
+          ? <ChevronUp size={18} className="text-[#7a7a68] shrink-0" />
+          : <ChevronDown size={18} className="text-[#7a7a68] shrink-0" />
+        }
       </button>
       {open && <div className="bg-white px-4 sm:px-5 pb-5">{children}</div>}
     </div>
@@ -68,6 +58,19 @@ const ProductSkeleton = () => (
         </div>
       </div>
     </div>
+  </div>
+);
+
+// ─── Stars display ────────────────────────────────────────────────────────────
+
+const Stars = ({ rating, size = 14 }: { rating: number; size?: number }) => (
+  <div className="flex items-center gap-0.5">
+    {[1, 2, 3, 4, 5].map((s) => (
+      <Star
+        key={s} size={size}
+        className={s <= Math.round(rating) ? "text-[#d4a017] fill-[#d4a017]" : "text-[#d0c8b8]"}
+      />
+    ))}
   </div>
 );
 
@@ -150,12 +153,12 @@ export default function ProductDetails({ productId }: { productId: string }) {
       {/* Breadcrumb */}
       <div className="bg-white border-b border-[#e8e0d0]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-1.5 text-xs sm:text-sm flex-wrap">
-          <Link href="/" className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors">{t("common.home", "Home")}</Link>
+          <Link href="/" className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors">{t("common.home","Home")}</Link>
           <ChevronRight size={13} className="text-[#b0a890]" />
-          <Link href="/shop" className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors">{t("common.shop", "Shop")}</Link>
+          <Link href="/shop" className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors">{t("common.shop","Shop")}</Link>
           <ChevronRight size={13} className="text-[#b0a890]" />
           <Link href={`/shop?cat=${product.category}`} className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors capitalize">
-            {product.category.replace("-", " ")}
+            {product.category.replace("-"," ")}
           </Link>
           <ChevronRight size={13} className="text-[#b0a890]" />
           <span className="text-[#2a2a1e] font-medium truncate max-w-[160px]">{product.name}</span>
@@ -171,10 +174,7 @@ export default function ProductDetails({ productId }: { productId: string }) {
             <div className="relative aspect-square rounded-2xl overflow-hidden bg-white border border-[#e8e0d0] shadow-sm">
               <Image
                 src={product.images[selectedImage] ?? product.images[0]}
-                alt={product.name}
-                fill
-                className="object-cover transition-opacity duration-300"
-                priority
+                alt={product.name} fill className="object-cover transition-opacity duration-300" priority
               />
               {product.badge && (
                 <span className="absolute top-3 left-3 bg-[#3d6b35] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
@@ -187,7 +187,6 @@ export default function ProductDetails({ productId }: { productId: string }) {
                 </span>
               )}
             </div>
-
             {product.images.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
                 {product.images.map((img, i) => (
@@ -196,7 +195,7 @@ export default function ProductDetails({ productId }: { productId: string }) {
                       selectedImage === i ? "border-[#3d6b35] shadow-sm" : "border-[#e8e0d0] hover:border-[#a8c890]"
                     }`}
                   >
-                    <Image src={img} alt={`View ${i + 1}`} fill className="object-cover" />
+                    <Image src={img} alt={`View ${i+1}`} fill className="object-cover" />
                   </button>
                 ))}
               </div>
@@ -209,7 +208,7 @@ export default function ProductDetails({ productId }: { productId: string }) {
             {/* Category + name + rating */}
             <div>
               <p className="text-xs font-bold text-[#3d6b35] uppercase tracking-widest mb-1.5 capitalize">
-                {product.category.replace("-", " ")}
+                {product.category.replace("-"," ")}
               </p>
               <h1 className="text-2xl sm:text-3xl font-black text-[#2a2a1e] font-outfit leading-tight mb-1">
                 {product.name}
@@ -218,7 +217,7 @@ export default function ProductDetails({ productId }: { productId: string }) {
               <div className="flex items-center gap-2 flex-wrap">
                 <Stars rating={product.rating} size={16} />
                 <span className="text-sm font-bold text-[#2a2a1e]">{product.rating}</span>
-                <span className="text-sm text-[#7a7a68]">({product.reviews} {t("product.reviews", "reviews")})</span>
+                <span className="text-sm text-[#7a7a68]">({product.reviews} {t("product.reviews","reviews")})</span>
               </div>
             </div>
 
@@ -260,51 +259,55 @@ export default function ProductDetails({ productId }: { productId: string }) {
             {/* Quantity + Add to Cart */}
             <div className="flex items-stretch gap-3">
               <div className="flex items-center border-2 border-[#d4c9a8] rounded-xl overflow-hidden bg-white shrink-0">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                <button onClick={() => setQuantity(Math.max(1,quantity-1))}
                   className="w-11 h-12 flex items-center justify-center hover:bg-[#eef5ea] transition-colors active:scale-95"
                 >
                   <Minus size={18} className="text-[#3d6b35]" />
                 </button>
                 <span className="w-10 text-center text-lg font-bold text-[#2a2a1e] select-none">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
+                <button onClick={() => setQuantity(quantity+1)}
                   className="w-11 h-12 flex items-center justify-center hover:bg-[#eef5ea] transition-colors active:scale-95"
                 >
                   <Plus size={18} className="text-[#3d6b35]" />
                 </button>
               </div>
-
-              <button
-                onClick={handleAddToCart}
+              <button onClick={handleAddToCart}
                 className={`flex-1 flex items-center justify-center gap-2 font-bold text-base px-6 py-3 rounded-xl transition-all duration-300 active:scale-[.98] shadow-md ${
                   addedToCart ? "bg-[#2e5228] text-white" : "bg-[#3d6b35] hover:bg-[#2e5228] text-white"
                 }`}
               >
                 {addedToCart
-                  ? <><Check size={20} /><span>{t("product.addedToCart", "Added to Cart!")}</span></>
-                  : <><ShoppingCart size={20} /><span>{t("shop.addToCart", "Add to Cart")}</span></>
+                  ? <><Check size={20} /><span>Added to Cart!</span></>
+                  : <><ShoppingCart size={20} /><span>{t("shop.addToCart","Add to Cart")}</span></>
                 }
               </button>
             </div>
+
+            {/* WhatsApp Order Button */}
+            <WhatsAppOrderButton
+              items={[{ name: product.name, variant: selectedWeight, quantity, price: product.price }]}
+              total={product.price * quantity}
+              size="md"
+              className="w-full"
+            />
 
             {/* Stock + SKU */}
             <div className="flex items-center justify-between text-xs flex-wrap gap-2">
               {product.inStock ? (
                 <span className="flex items-center gap-1.5 text-[#3d6b35] font-semibold">
                   <span className="w-2 h-2 rounded-full bg-[#3d6b35] animate-pulse" />
-                  {t("product.inStock", "In Stock")} — Ships in {product.deliveryDays} days
+                  In Stock — Ships in {product.deliveryDays} days
                 </span>
               ) : (
-                <span className="text-[#c0392b] font-semibold">{t("product.outOfStock", "Currently out of stock")}</span>
+                <span className="text-[#c0392b] font-semibold">Currently out of stock</span>
               )}
-              <span className="text-[#a8a090]">{t("product.sku", "SKU")}: {product.sku}</span>
+              <span className="text-[#a8a090]">SKU: {product.sku}</span>
             </div>
 
             {/* Trust badges */}
             <div className="grid grid-cols-3 gap-2">
               {[
-                { icon: Truck,       label: t("cart.freeDelivery", "Free delivery"), sub: "above ₹999" },
+                { icon: Truck,       label: "Free delivery", sub: "above ₹999" },
                 { icon: RotateCcw,   label: "Easy returns",  sub: "within 7 days" },
                 { icon: ShieldCheck, label: "Secure pay",    sub: "trusted checkout" },
               ].map(({ icon: Icon, label, sub }) => (
@@ -336,7 +339,7 @@ export default function ProductDetails({ productId }: { productId: string }) {
       {/* ── Accordions ── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12 flex flex-col gap-3">
 
-        <AccordionBlock title={t("product.highlights", "About This Product")}>
+        <AccordionBlock title={t("product.highlights","About This Product")}>
           <p className="text-sm sm:text-base text-[#5a5a48] leading-relaxed mb-4">{product.description}</p>
           <ul className="flex flex-col gap-2.5">
             {product.highlights.map((h) => (
@@ -350,7 +353,7 @@ export default function ProductDetails({ productId }: { productId: string }) {
           </ul>
         </AccordionBlock>
 
-        <AccordionBlock title={t("product.howToUse", "How to Use")}>
+        <AccordionBlock title={t("product.howToUse","How to Use")}>
           <div className="flex flex-col sm:flex-row gap-3">
             {product.howToUse.map((item) => (
               <div key={item.step} className="flex-1 flex gap-3 bg-[#faf7f2] border border-[#e8e0d0] rounded-xl p-3.5">
@@ -366,50 +369,12 @@ export default function ProductDetails({ productId }: { productId: string }) {
           </div>
         </AccordionBlock>
 
-        <AccordionBlock title={`${t("product.reviews", "Customer Reviews")} (${product.reviews})`}>
-          <div className="flex items-center gap-5 mb-5 p-3.5 bg-[#faf7f2] rounded-xl border border-[#e8e0d0] flex-wrap">
-            <div className="text-center">
-              <div className="text-4xl font-black text-[#3d6b35]">{product.rating}</div>
-              <Stars rating={product.rating} size={16} />
-              <p className="text-xs text-[#7a7a68] mt-1">{product.reviews} reviews</p>
-            </div>
-            <div className="flex-1 min-w-[140px] flex flex-col gap-1">
-              {[5, 4, 3, 2, 1].map((star) => {
-                const pct = star === 5 ? 72 : star === 4 ? 18 : star === 3 ? 6 : 2;
-                return (
-                  <div key={star} className="flex items-center gap-1.5">
-                    <span className="text-xs text-[#5a5a48] w-2.5">{star}</span>
-                    <Star size={10} className="text-[#d4a017] fill-[#d4a017] shrink-0" />
-                    <div className="flex-1 h-2 bg-[#e8e0d0] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#d4a017] rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                    <span className="text-[10px] text-[#7a7a68] w-7 text-right">{pct}%</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex flex-col gap-3">
-            {mockReviews.map((r) => (
-              <div key={r.id} className="bg-[#faf7f2] border border-[#e8e0d0] rounded-xl p-4">
-                <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-bold text-[#2a2a1e]">{r.name}</span>
-                      {r.verified && (
-                        <span className="flex items-center gap-1 text-[10px] text-[#3d6b35] bg-[#eef5ea] px-2 py-0.5 rounded-full font-semibold">
-                          <Check size={9} />Verified
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-[#a8a090] mt-0.5">{r.date}</p>
-                  </div>
-                  <Stars rating={r.rating} size={14} />
-                </div>
-                <p className="text-sm text-[#3a3a2e] leading-relaxed">{r.comment}</p>
-              </div>
-            ))}
-          </div>
+        {/* ── Live Reviews accordion ── */}
+        <AccordionBlock title="Customer Reviews">
+          <ProductReviews
+            productId={product.id}
+            productName={product.name}
+          />
         </AccordionBlock>
       </div>
 
@@ -419,7 +384,9 @@ export default function ProductDetails({ productId }: { productId: string }) {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
             <div className="mb-5">
               <p className="text-xs font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">You may also like</p>
-              <h2 className="text-xl sm:text-2xl font-bold text-[#2a2a1e] font-outfit">{t("product.relatedProducts", "Related Products")}</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-[#2a2a1e] font-outfit">
+                {t("product.relatedProducts","Related Products")}
+              </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {related.map((p) => (
@@ -452,14 +419,20 @@ export default function ProductDetails({ productId }: { productId: string }) {
           <p className="text-[10px] text-[#7a7a68] truncate">{selectedWeight}</p>
           <p className="text-xl font-black text-[#3d6b35] leading-tight">₹{product.price}</p>
         </div>
+        <WhatsAppOrderButton
+          items={[{ name: product.name, variant: selectedWeight, quantity, price: product.price }]}
+          total={product.price * quantity}
+          size="sm"
+          label="WhatsApp"
+        />
         <button onClick={handleAddToCart}
           className={`flex items-center gap-2 font-bold text-sm px-5 py-3 rounded-xl transition-all duration-300 active:scale-95 shadow-md ${
             addedToCart ? "bg-[#2e5228] text-white" : "bg-[#3d6b35] hover:bg-[#2e5228] text-white"
           }`}
         >
           {addedToCart
-            ? <><Check size={18} />{t("product.addedToCart", "Added!")}</>
-            : <><ShoppingCart size={18} />{t("shop.addToCart", "Add to Cart")}</>
+            ? <><Check size={18} />Added!</>
+            : <><ShoppingCart size={18} />{t("shop.addToCart","Add")}</>
           }
         </button>
       </div>

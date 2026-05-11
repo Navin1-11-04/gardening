@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, ShoppingCart, BarChart3,
   Settings, LogOut, ChevronLeft, ChevronRight, Leaf,
   Bell, Menu, TrendingUp, Tag, MessageSquare, BookOpen,
-  FileText, Ticket,
+  FileText, Ticket, Star,
 } from "lucide-react";
 
 interface AdminLayoutProps { children: ReactNode; }
@@ -18,7 +18,8 @@ const navItems = [
   { label: "Categories", href: "/admin/categories", icon: Tag,             description: "Product categories" },
   { label: "Orders",     href: "/admin/orders",     icon: ShoppingCart,    description: "Customer orders" },
   { label: "Coupons",    href: "/admin/coupons",    icon: Ticket,          description: "Discount codes" },
-  { label: "Messages",   href: "/admin/inquiries",  icon: MessageSquare,   description: "Contact inquiries", badge: true },
+  { label: "Reviews",    href: "/admin/reviews",    icon: Star,            description: "Customer reviews", badge: "reviews" },
+  { label: "Messages",   href: "/admin/inquiries",  icon: MessageSquare,   description: "Contact inquiries", badge: "messages" },
   { label: "Guides",     href: "/admin/guides",     icon: BookOpen,        description: "Gardening articles" },
   { label: "Content",    href: "/admin/content",    icon: FileText,        description: "Edit page content" },
   { label: "Analytics",  href: "/admin/analytics",  icon: BarChart3,       description: "Sales & revenue" },
@@ -28,10 +29,11 @@ const navItems = [
 function AdminShell({ children }: { children: ReactNode }) {
   const router   = useRouter();
   const pathname = usePathname();
-  const [collapsed,   setCollapsed]   = useState(false);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
-  const [time,        setTime]        = useState("");
-  const [newMessages, setNewMessages] = useState(0);
+  const [collapsed,      setCollapsed]      = useState(false);
+  const [mobileOpen,     setMobileOpen]     = useState(false);
+  const [time,           setTime]           = useState("");
+  const [newMessages,    setNewMessages]    = useState(0);
+  const [pendingReviews, setPendingReviews] = useState(0);
 
   useEffect(() => {
     const tick = () => setTime(new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }));
@@ -41,17 +43,24 @@ function AdminShell({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const fetchUnread = async () => {
+    const fetchBadges = async () => {
       try {
-        const res = await fetch("/api/admin/inquiries");
-        if (res.ok) {
-          const data = await res.json();
-          setNewMessages(data.filter((i: any) => i.status === "new").length);
+        const [msgRes, revRes] = await Promise.all([
+          fetch("/api/admin/inquiries"),
+          fetch("/api/admin/reviews?status=pending"),
+        ]);
+        if (msgRes.ok) {
+          const msgs = await msgRes.json();
+          setNewMessages(msgs.filter((i: any) => i.status === "new").length);
+        }
+        if (revRes.ok) {
+          const revs = await revRes.json();
+          setPendingReviews(revs.length);
         }
       } catch {}
     };
-    fetchUnread();
-    const id = setInterval(fetchUnread, 60_000);
+    fetchBadges();
+    const id = setInterval(fetchBadges, 60_000);
     return () => clearInterval(id);
   }, []);
 
@@ -61,6 +70,12 @@ function AdminShell({ children }: { children: ReactNode }) {
   };
 
   const pageTitle = navItems.find((n) => pathname.startsWith(n.href))?.label ?? "Admin";
+
+  const getBadgeCount = (item: typeof navItems[0]) => {
+    if ((item as any).badge === "messages") return newMessages;
+    if ((item as any).badge === "reviews")  return pendingReviews;
+    return 0;
+  };
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -80,9 +95,12 @@ function AdminShell({ children }: { children: ReactNode }) {
         {navItems.map((item) => {
           const Icon   = item.icon;
           const active = pathname.startsWith(item.href);
-          const count  = (item as any).badge ? newMessages : 0;
+          const count  = getBadgeCount(item);
           return (
-            <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined}
+            <Link
+              key={item.href}
+              href={item.href}
+              title={collapsed ? item.label : undefined}
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 active
@@ -145,12 +163,9 @@ function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen bg-[#f0f4ed] overflow-hidden">
-      {/* Desktop sidebar */}
       <aside className={`hidden lg:flex flex-col ${collapsed ? "w-17" : "w-60"} bg-[#1e3d18] shrink-0 transition-all duration-300 ease-in-out`}>
         <SidebarContent />
       </aside>
-
-      {/* Mobile sidebar */}
       {mobileOpen && (
         <>
           <div className="lg:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setMobileOpen(false)} />
@@ -159,16 +174,10 @@ function AdminShell({ children }: { children: ReactNode }) {
           </aside>
         </>
       )}
-
-      {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top bar */}
         <header className="bg-white border-b border-[#dce8d4] px-4 sm:px-6 py-3.5 flex items-center justify-between shrink-0 shadow-sm">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-[#f0f4ed] text-[#3d6b35] transition-colors"
-            >
+            <button onClick={() => setMobileOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-[#f0f4ed] text-[#3d6b35] transition-colors">
               <Menu size={20} />
             </button>
             <div>
@@ -180,7 +189,7 @@ function AdminShell({ children }: { children: ReactNode }) {
             <span className="hidden sm:block text-sm font-mono text-[#5a8a50] bg-[#f0f4ed] px-3 py-1.5 rounded-lg">{time}</span>
             <Link href="/admin/inquiries" className="relative p-2 rounded-lg hover:bg-[#f0f4ed] text-[#5a8a50] transition-colors">
               <Bell size={18} />
-              {newMessages > 0 && (
+              {(newMessages + pendingReviews) > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
               )}
             </Link>
@@ -195,8 +204,6 @@ function AdminShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
-
-        {/* Page content */}
         <main className="flex-1 overflow-auto p-4 sm:p-6">{children}</main>
       </div>
     </div>
