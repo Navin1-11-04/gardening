@@ -157,6 +157,9 @@ const AddressStep = ({
 };
 
 // ─── OTP Step — improved for elderly users ────────────────────────────────────
+// OtpStep — updated for auto-verify flow (no SMS)
+// Replace only the OtpStep component in CheckOut.tsx with this version.
+// The rest of CheckOut.tsx stays exactly the same.
 
 const OtpStep = ({
   phone, onVerified, onBack,
@@ -170,6 +173,7 @@ const OtpStep = ({
   const [countdown,   setCountdown]   = useState(0);
   const [sendError,   setSendError]   = useState("");
   const [verifyError, setVerifyError] = useState("");
+  const [devOtp,      setDevOtp]      = useState(""); // dev only
 
   const startCountdown = () => {
     setCountdown(30);
@@ -189,9 +193,11 @@ const OtpStep = ({
         body: JSON.stringify({ phone }),
       });
       const data = await res.json();
-      if (!res.ok) { setSendError(data.error ?? "Failed to send OTP. Please try again."); return; }
+      if (!res.ok) { setSendError(data.error ?? "Failed to generate code. Please try again."); return; }
       setSent(true);
       startCountdown();
+      // In dev mode, auto-fill OTP for easy testing
+      if (data.devOtp) setDevOtp(data.devOtp);
     } catch {
       setSendError("Network error. Please check your connection and try again.");
     } finally {
@@ -200,7 +206,7 @@ const OtpStep = ({
   };
 
   const handleVerify = async () => {
-    if (otp.length !== 6) { setVerifyError("Please enter the 6-digit code sent to your phone."); return; }
+    if (otp.length !== 6) { setVerifyError("Please enter the 6-digit code."); return; }
     setVerifying(true);
     setVerifyError("");
     try {
@@ -210,10 +216,9 @@ const OtpStep = ({
       });
       const data = await res.json();
       if (!res.ok) {
-        // Friendly message for common errors
         if (data.error?.includes("expired")) {
-          setVerifyError("This code has expired. Please request a new one by clicking 'Resend code'.");
-          setSent(false); // Reset to show send button again
+          setVerifyError("Code expired. Please request a new one.");
+          setSent(false);
         } else {
           setVerifyError(data.error ?? "Incorrect code. Please check and try again.");
         }
@@ -235,7 +240,7 @@ const OtpStep = ({
         <p className="text-sm font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">Step 2</p>
         <h2 className="text-2xl sm:text-3xl font-bold text-[#2a2a1e] font-outfit">Verify Your Phone</h2>
         <p className="text-base text-[#7a7a68] mt-1">
-          We'll send a one-time code to confirm your order.
+          We'll generate a one-time code to confirm your order.
         </p>
       </div>
 
@@ -244,7 +249,7 @@ const OtpStep = ({
         <div className="flex items-center gap-3 bg-[#eef5ea] border border-[#b8d4a0] rounded-2xl px-4 py-3">
           <Phone size={20} className="text-[#3d6b35] shrink-0" />
           <div>
-            <p className="text-xs text-[#5a7a50] font-semibold">Sending OTP to</p>
+            <p className="text-xs text-[#5a7a50] font-semibold">Verifying phone</p>
             <p className="text-lg font-black text-[#2a2a1e]">+91 {displayPhone}</p>
           </div>
           <button onClick={onBack} className="ml-auto text-sm font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
@@ -263,24 +268,29 @@ const OtpStep = ({
               className="w-full flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] text-white font-bold text-lg py-4 rounded-xl transition-all"
             >
               {sending
-                ? <><RefreshCw size={20} className="animate-spin" />Sending…</>
-                : <><MessageSquare size={20} />Send Verification Code</>
+                ? <><RefreshCw size={20} className="animate-spin" />Please wait…</>
+                : <><CheckCircle2 size={20} />Get Verification Code</>
               }
             </button>
             <p className="text-sm text-center text-[#a8a090]">
-              You'll receive a free SMS with a 6-digit code.
+              A 6-digit code will be generated for you to enter below.
             </p>
           </>
         ) : (
           <>
             <div className="bg-[#eef5ea] border border-[#b8d4a0] rounded-xl px-4 py-3">
-              <p className="text-sm font-bold text-[#2a2a1e]">✅ Code sent to +91 {displayPhone}</p>
-              <p className="text-xs text-[#7a7a68] mt-0.5">Check your SMS inbox. The code expires in 10 minutes.</p>
+              <p className="text-sm font-bold text-[#2a2a1e]">✅ Code generated for +91 {displayPhone}</p>
+              <p className="text-xs text-[#7a7a68] mt-0.5">Enter the 6-digit code below to continue.</p>
+              {/* Dev-only helper */}
+              {devOtp && (
+                <p className="text-xs text-[#3d6b35] font-bold mt-1">
+                  🛠 Dev mode — your code: <span className="font-mono tracking-widest">{devOtp}</span>
+                </p>
+              )}
             </div>
 
-            {/* Large OTP input — easy for elderly users */}
             <div className="flex flex-col gap-2">
-              <label className="text-base font-bold text-[#2a2a1e]">Enter the 6-digit code from your SMS</label>
+              <label className="text-base font-bold text-[#2a2a1e]">Enter the 6-digit code</label>
               <input
                 type="tel"
                 inputMode="numeric"
@@ -309,12 +319,12 @@ const OtpStep = ({
 
             <div className="text-center">
               {countdown > 0 ? (
-                <p className="text-sm text-[#a8a090]">Resend available in {countdown}s</p>
+                <p className="text-sm text-[#a8a090]">Request new code in {countdown}s</p>
               ) : (
                 <button onClick={handleSendOtp} disabled={sending}
                   className="text-base font-semibold text-[#3d6b35] hover:underline disabled:opacity-50"
                 >
-                  {sending ? "Sending…" : "📱 Resend code"}
+                  {sending ? "Please wait…" : "🔄 Get a new code"}
                 </button>
               )}
             </div>
@@ -322,7 +332,7 @@ const OtpStep = ({
         )}
       </div>
 
-      {/* Help line for elderly users */}
+      {/* Help */}
       <div className="bg-[#faf7f2] border border-[#d4c9a8] rounded-2xl px-5 py-4 flex items-center gap-3">
         <Phone size={18} className="text-[#3d6b35] shrink-0" />
         <div>

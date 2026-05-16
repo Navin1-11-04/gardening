@@ -1,52 +1,88 @@
-import { NextRequest, NextResponse } from "next/server";
-import twilio from "twilio";
+// app/api/notify/whatsapp/route.ts
+// Sends order confirmation via Meta WhatsApp Cloud API.
+// Free tier: 1,000 business-initiated conversations/month.
+// Docs: https://developers.facebook.com/docs/whatsapp/cloud-api/messages
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID!,
-  process.env.TWILIO_AUTH_TOKEN!
-);
+const WA_API_URL = `https://graph.facebook.com/v19.0/${process.env.META_WA_PHONE_NUMBER_ID}/messages`;
+const WA_TOKEN   = process.env.META_WA_ACCESS_TOKEN;
 
-const FROM_WHATSAPP = `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`; // e.g. whatsapp:+14155238886
-const ADMIN_PHONE   = process.env.ADMIN_WHATSAPP_NUMBER;               // e.g. +919876543210
+async function sendWhatsAppMessage(to: string, body: string): Promise<boolean> {
+  if (!WA_TOKEN || !process.env.META_WA_PHONE_NUMBER_ID) {
+    console.warn("WhatsApp: META_WA_ACCESS_TOKEN or META_WA_PHONE_NUMBER_ID not set — skipping.");
+    return false;
+  }
+
+  // Normalise to E.164 without +
+  const phone = to.replace(/\D/g, "");
+  const e164  = phone.startsWith("91") ? phone : `91${phone.slice(-10)}`;
+
+  try {
+    const res = await fetch(WA_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${WA_TOKEN}`,
+        "Content-Type":  "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: e164,
+        type: "text",
+        text: { body },
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      console.error("WhatsApp send error:", err);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("WhatsApp fetch error:", err);
+    return false;
+  }
+}
 
 // ─── Message templates ────────────────────────────────────────────────────────
 
 function customerMessage(data: {
-  orderNumber: string; customerName: string; total: number;
+  orderNumber: string;
+  customerName: string;
+  total: number;
   items: { name: string; quantity: number }[];
 }): string {
-  const itemLines = data.items
-    .map((i) => `  • ${i.name} × ${i.quantity}`)
-    .join("\n");
+  const firstName = data.customerName.split(" ")[0];
+  const itemLines = data.items.map((i) => `  • ${i.name} × ${i.quantity}`).join("\n");
 
   return `🌱 *Kavin Organics* — Order Confirmed!
 
-Hi ${data.customerName}! 👋
+Hi ${firstName}! 👋
 
 Your order *#${data.orderNumber}* has been placed successfully.
 
 *Items ordered:*
 ${itemLines}
 
-*Total paid:* ₹${data.total.toLocaleString("en-IN")}
+*Total:* ₹${data.total.toLocaleString("en-IN")}
 
-We'll pack your order carefully and dispatch it within 1–2 business days. You'll receive another message when it ships! 🚚
+We'll pack and dispatch within 1–2 business days. You'll get another message when it ships! 🚚
 
-Thank you for choosing Kavin Organics. Happy gardening! 🌿
+Questions? Call us: *+91 98765 43210*
 
-For any queries, call us: *+91 98765 43210*`;
+Thank you — Happy Gardening! 🌿`;
 }
 
 function adminMessage(data: {
-  orderNumber: string; customerName: string; customerPhone: string;
-  total: number; items: { name: string; quantity: number }[];
+  orderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  total: number;
+  items: { name: string; quantity: number }[];
   address: { city: string; state: string; pincode: string };
 }): string {
-  const itemLines = data.items
-    .map((i) => `  • ${i.name} × ${i.quantity}`)
-    .join("\n");
+  const itemLines = data.items.map((i) => `  • ${i.name} × ${i.quantity}`).join("\n");
 
-  return `🔔 *New Order Received!*
+  return `🔔 *New Order!*
 
 *Order:* #${data.orderNumber}
 *Customer:* ${data.customerName}
@@ -58,47 +94,35 @@ ${itemLines}
 
 *Ship to:* ${data.address.city}, ${data.address.state} — ${data.address.pincode}
 
-Please process this order. 📦`;
+Please process this order 📦`;
 }
 
 // ─── Route ────────────────────────────────────────────────────────────────────
+
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
     const { customerPhone, ...rest } = data;
 
-    const promises: Promise<any>[] = [];
+    const promises: Promise<boolean>[] = [];
 
-    // Send to customer (if they provided a phone)
+    // Send to customer
     if (customerPhone) {
-      const toPhone = customerPhone.replace(/\D/g, ""); // strip non-digits
-      const e164    = toPhone.startsWith("91") ? `+${toPhone}` : `+91${toPhone}`;
-      promises.push(
-        client.messages.create({
-          from: FROM_WHATSAPP,
-          to:   `whatsapp:${e164}`,
-          body: customerMessage({ ...rest, customerPhone }),
-        })
-      );
+      promises.push(sendWhatsAppMessage(customerPhone, customerMessage({ ...rest, customerPhone })));
     }
 
-    // Always send to admin
-    if (ADMIN_PHONE) {
-      promises.push(
-        client.messages.create({
-          from: FROM_WHATSAPP,
-          to:   `whatsapp:${ADMIN_PHONE}`,
-          body: adminMessage({ ...rest, customerPhone }),
-        })
-      );
+    // Send to admin
+    const adminPhone = process.env.ADMIN_WHATSAPP_NUMBER;
+    if (adminPhone) {
+      promises.push(sendWhatsAppMessage(adminPhone, adminMessage({ ...rest, customerPhone })));
     }
 
-    await Promise.allSettled(promises); // don't fail if one send errors
+    await Promise.allSettled(promises);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("WhatsApp notify error:", error);
-    // Non-fatal — return 200 so caller isn't disrupted
     return NextResponse.json({ success: false, error: error?.message });
   }
 }

@@ -1,5 +1,9 @@
+// app/api/otp/verify/route.ts
+// Verifies the OTP stored in the httpOnly cookie set by /api/otp/send.
+// No external service needed.
+
 import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify } from "jose";
+import { jwtVerify, SignJWT } from "jose";
 
 const OTP_SECRET = new TextEncoder().encode(
   process.env.ADMIN_JWT_SECRET ?? "otp-secret-change-me"
@@ -11,28 +15,26 @@ export async function POST(request: NextRequest) {
 
     if (!phone || !otp) {
       return NextResponse.json(
-        { error: "Phone number and OTP are required." },
+        { error: "Phone number and verification code are required." },
         { status: 400 }
       );
     }
 
-    // Retrieve the OTP token cookie set during /api/otp/send
     const token = request.cookies.get("otp_token")?.value;
     if (!token) {
       return NextResponse.json(
-        { error: "OTP has expired or was not sent. Please request a new one." },
+        { error: "Verification code has expired. Please request a new one." },
         { status: 400 }
       );
     }
 
-    // Verify and decode the JWT
     let payload: any;
     try {
       const result = await jwtVerify(token, OTP_SECRET);
       payload = result.payload;
     } catch {
       return NextResponse.json(
-        { error: "OTP has expired. Please request a new code." },
+        { error: "Verification code has expired. Please request a new one." },
         { status: 400 }
       );
     }
@@ -48,14 +50,12 @@ export async function POST(request: NextRequest) {
 
     if (payload.otp !== String(otp).trim()) {
       return NextResponse.json(
-        { error: "Incorrect OTP. Please check and try again." },
+        { error: "Incorrect code. Please check and try again." },
         { status: 400 }
       );
     }
 
-    // OTP is correct — issue a verified_phone cookie valid for 30 minutes
-    // Checkout reads this before allowing order placement
-    const { SignJWT } = await import("jose");
+    // OTP correct — issue verified_phone cookie (30 min)
     const verifiedToken = await new SignJWT({ phone: payload.phone, verified: true })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("30m")
@@ -67,16 +67,16 @@ export async function POST(request: NextRequest) {
       message: "Phone number verified successfully.",
     });
 
-    // Clear OTP token (one-time use)
+    // Clear one-time OTP cookie
     response.cookies.set("otp_token", "", { maxAge: 0, path: "/" });
 
-    // Set verified phone token
+    // Set verified phone cookie
     response.cookies.set("verified_phone", verifiedToken, {
-      httpOnly:  true,
-      secure:    process.env.NODE_ENV === "production",
-      sameSite:  "lax",
-      maxAge:    30 * 60, // 30 minutes — enough time to complete checkout
-      path:      "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 30 * 60,
+      path: "/",
     });
 
     return response;

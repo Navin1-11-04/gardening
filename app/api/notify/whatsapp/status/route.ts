@@ -1,52 +1,85 @@
 // app/api/notify/whatsapp/status/route.ts
-// Sends a WhatsApp message to the customer when order status changes to shipped or delivered.
+// Sends shipped/delivered status updates via Meta WhatsApp Cloud API.
 
 import { NextRequest, NextResponse } from "next/server";
-import twilio from "twilio";
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID!,
-  process.env.TWILIO_AUTH_TOKEN!
-);
+const WA_API_URL = `https://graph.facebook.com/v19.0/${process.env.META_WA_PHONE_NUMBER_ID}/messages`;
+const WA_TOKEN   = process.env.META_WA_ACCESS_TOKEN;
 
-const FROM_WHATSAPP = `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`;
+async function sendWhatsAppMessage(to: string, body: string): Promise<boolean> {
+  if (!WA_TOKEN || !process.env.META_WA_PHONE_NUMBER_ID) {
+    console.warn("WhatsApp: env vars not set — skipping status notification.");
+    return false;
+  }
+
+  const phone = to.replace(/\D/g, "");
+  const e164  = phone.startsWith("91") ? phone : `91${phone.slice(-10)}`;
+
+  try {
+    const res = await fetch(WA_API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${WA_TOKEN}`,
+        "Content-Type":  "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: e164,
+        type: "text",
+        text: { body },
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      console.error("WhatsApp status send error:", err);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("WhatsApp status fetch error:", err);
+    return false;
+  }
+}
 
 function shippedMessage(data: {
   orderNumber: string;
   customerName: string;
   total: number;
 }): string {
+  const firstName = data.customerName.split(" ")[0];
   return `📦 *Kavin Organics* — Your order is on its way!
 
-Hi ${data.customerName}! 🌿
+Hi ${firstName}! 🌿
 
-Great news! Your order *#${data.orderNumber}* has been packed and handed to our delivery partner.
+Your order *#${data.orderNumber}* has been packed and handed to our delivery partner.
 
 *Total:* ₹${data.total.toLocaleString("en-IN")}
 
-You will receive a call from our delivery partner before they arrive. Most orders arrive within 1–2 business days.
+Our delivery partner will call you before arriving. Most orders arrive within 1–2 days.
 
-Questions? Call us: *+91 98765 43210*
+Questions? Call: *+91 98765 43210*
 
-Thank you for choosing Kavin Organics! 🌱`;
+Thank you for shopping with Kavin Organics! 🌱`;
 }
 
 function deliveredMessage(data: {
   orderNumber: string;
   customerName: string;
 }): string {
+  const firstName = data.customerName.split(" ")[0];
   return `✅ *Kavin Organics* — Order Delivered!
 
-Hi ${data.customerName}! 🎉
+Hi ${firstName}! 🎉
 
 Your order *#${data.orderNumber}* has been delivered successfully!
 
 We hope you love your garden supplies. Happy gardening! 🌿
 
-If you have any questions or need help with your plants, call us anytime:
+Any questions or help with your plants, call us anytime:
 📞 *+91 98765 43210*
 
-We'd love to see your garden grow — thank you for shopping with us! 🌱`;
+Thank you for choosing Kavin Organics! 🌱`;
 }
 
 export async function POST(request: NextRequest) {
@@ -58,9 +91,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, reason: "No phone number" });
     }
 
-    const toPhone = String(customerPhone).replace(/\D/g, "");
-    const e164    = toPhone.startsWith("91") ? `+${toPhone}` : `+91${toPhone}`;
-
     let body = "";
     if (status === "shipped") {
       body = shippedMessage({ orderNumber, customerName, total });
@@ -70,13 +100,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, reason: "Status not notifiable" });
     }
 
-    await client.messages.create({
-      from: FROM_WHATSAPP,
-      to:   `whatsapp:${e164}`,
-      body,
-    });
-
-    return NextResponse.json({ success: true });
+    const ok = await sendWhatsAppMessage(customerPhone, body);
+    return NextResponse.json({ success: ok });
   } catch (error: any) {
     console.error("WhatsApp status notify error:", error);
     return NextResponse.json({ success: false, error: error?.message });
