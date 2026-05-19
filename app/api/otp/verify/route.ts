@@ -1,6 +1,6 @@
 // app/api/otp/verify/route.ts
-// Verifies the OTP stored in the httpOnly cookie set by /api/otp/send.
-// No external service needed.
+// Verifies the OTP stored in the httpOnly cookie.
+// Updated to match new send route that also stores email in the JWT.
 
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify, SignJWT } from "jose";
@@ -50,13 +50,17 @@ export async function POST(request: NextRequest) {
 
     if (payload.otp !== String(otp).trim()) {
       return NextResponse.json(
-        { error: "Incorrect code. Please check and try again." },
+        { error: "Incorrect code. Please check your email and try again." },
         { status: 400 }
       );
     }
 
     // OTP correct — issue verified_phone cookie (30 min)
-    const verifiedToken = await new SignJWT({ phone: payload.phone, verified: true })
+    const verifiedToken = await new SignJWT({
+      phone: payload.phone,
+      email: payload.email, // carry email forward for order creation
+      verified: true,
+    })
       .setProtectedHeader({ alg: "HS256" })
       .setExpirationTime("30m")
       .setIssuedAt()
@@ -70,7 +74,7 @@ export async function POST(request: NextRequest) {
     // Clear one-time OTP cookie
     response.cookies.set("otp_token", "", { maxAge: 0, path: "/" });
 
-    // Set verified phone cookie
+    // Set verified phone cookie (used by order creation endpoint)
     response.cookies.set("verified_phone", verifiedToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

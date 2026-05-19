@@ -12,12 +12,17 @@ import { useCart } from "@/app/(main)/_context/CartContext";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { Product } from "@/data/Product";
 import ProductReviews from "@/app/(main)/_components/ProductReviews";
-import WhatsAppOrderButton from "@/app/(main)/_components/WhatsAppOrderButton";
 
 // ─── Accordion ────────────────────────────────────────────────────────────────
 
-const AccordionBlock = ({ title, children, defaultOpen = true }: {
-  title: string; children: React.ReactNode; defaultOpen?: boolean;
+const AccordionBlock = ({
+  title,
+  children,
+  defaultOpen = true,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -46,7 +51,9 @@ const ProductSkeleton = () => (
         <div className="flex flex-col gap-3">
           <div className="aspect-square rounded-2xl bg-[#f0ece4]" />
           <div className="grid grid-cols-4 gap-2">
-            {[1,2,3,4].map((i) => <div key={i} className="aspect-square rounded-xl bg-[#f0ece4]" />)}
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="aspect-square rounded-xl bg-[#f0ece4]" />
+            ))}
           </div>
         </div>
         <div className="flex flex-col gap-4 pt-2">
@@ -67,8 +74,13 @@ const Stars = ({ rating, size = 14 }: { rating: number; size?: number }) => (
   <div className="flex items-center gap-0.5">
     {[1, 2, 3, 4, 5].map((s) => (
       <Star
-        key={s} size={size}
-        className={s <= Math.round(rating) ? "text-[#d4a017] fill-[#d4a017]" : "text-[#d0c8b8]"}
+        key={s}
+        size={size}
+        className={
+          s <= Math.round(rating)
+            ? "text-[#d4a017] fill-[#d4a017]"
+            : "text-[#d0c8b8]"
+        }
       />
     ))}
   </div>
@@ -136,7 +148,10 @@ export default function ProductDetails({ productId }: { productId: string }) {
         <div className="text-7xl mb-6">🌱</div>
         <h2 className="text-3xl font-bold text-[#2a2a1e] font-outfit mb-3">Product not found</h2>
         <p className="text-lg text-[#7a7a68] mb-8">This product may no longer be available.</p>
-        <Link href="/shop" className="inline-flex items-center gap-2 bg-[#3d6b35] hover:bg-[#335c2c] text-white font-bold text-lg px-8 py-4 rounded-xl transition-colors">
+        <Link
+          href="/shop"
+          className="inline-flex items-center gap-2 bg-[#3d6b35] hover:bg-[#335c2c] text-white font-bold text-lg px-8 py-4 rounded-xl transition-colors"
+        >
           Browse All Products
         </Link>
       </div>
@@ -153,12 +168,19 @@ export default function ProductDetails({ productId }: { productId: string }) {
       {/* Breadcrumb */}
       <div className="bg-white border-b border-[#e8e0d0]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-1.5 text-xs sm:text-sm flex-wrap">
-          <Link href="/" className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors">{t("common.home","Home")}</Link>
+          <Link href="/" className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors">
+            {t("common.home", "Home")}
+          </Link>
           <ChevronRight size={13} className="text-[#b0a890]" />
-          <Link href="/shop" className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors">{t("common.shop","Shop")}</Link>
+          <Link href="/shop" className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors">
+            {t("common.shop", "Shop")}
+          </Link>
           <ChevronRight size={13} className="text-[#b0a890]" />
-          <Link href={`/shop?cat=${product.category}`} className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors capitalize">
-            {product.category.replace("-"," ")}
+          <Link
+            href={`/shop?cat=${product.category}`}
+            className="text-[#7a7a68] hover:text-[#3d6b35] transition-colors capitalize"
+          >
+            {product.category.replace("-", " ")}
           </Link>
           <ChevronRight size={13} className="text-[#b0a890]" />
           <span className="text-[#2a2a1e] font-medium truncate max-w-[160px]">{product.name}</span>
@@ -174,7 +196,10 @@ export default function ProductDetails({ productId }: { productId: string }) {
             <div className="relative aspect-square rounded-2xl overflow-hidden bg-white border border-[#e8e0d0] shadow-sm">
               <Image
                 src={product.images[selectedImage] ?? product.images[0]}
-                alt={product.name} fill className="object-cover transition-opacity duration-300" priority
+                alt={product.name}
+                fill
+                className="object-cover transition-opacity duration-300"
+                priority
               />
               {product.badge && (
                 <span className="absolute top-3 left-3 bg-[#3d6b35] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
@@ -190,12 +215,16 @@ export default function ProductDetails({ productId }: { productId: string }) {
             {product.images.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
                 {product.images.map((img, i) => (
-                  <button key={i} onClick={() => setSelectedImage(i)}
+                  <button
+                    key={i}
+                    onClick={() => setSelectedImage(i)}
                     className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
-                      selectedImage === i ? "border-[#3d6b35] shadow-sm" : "border-[#e8e0d0] hover:border-[#a8c890]"
+                      selectedImage === i
+                        ? "border-[#3d6b35] shadow-sm"
+                        : "border-[#e8e0d0] hover:border-[#a8c890]"
                     }`}
                   >
-                    <Image src={img} alt={`View ${i+1}`} fill className="object-cover" />
+                    <Image src={img} alt={`View ${i + 1}`} fill className="object-cover" />
                   </button>
                 ))}
               </div>
@@ -208,7 +237,7 @@ export default function ProductDetails({ productId }: { productId: string }) {
             {/* Category + name + rating */}
             <div>
               <p className="text-xs font-bold text-[#3d6b35] uppercase tracking-widest mb-1.5 capitalize">
-                {product.category.replace("-"," ")}
+                {product.category.replace("-", " ")}
               </p>
               <h1 className="text-2xl sm:text-3xl font-black text-[#2a2a1e] font-outfit leading-tight mb-1">
                 {product.name}
@@ -217,7 +246,9 @@ export default function ProductDetails({ productId }: { productId: string }) {
               <div className="flex items-center gap-2 flex-wrap">
                 <Stars rating={product.rating} size={16} />
                 <span className="text-sm font-bold text-[#2a2a1e]">{product.rating}</span>
-                <span className="text-sm text-[#7a7a68]">({product.reviews} {t("product.reviews","reviews")})</span>
+                <span className="text-sm text-[#7a7a68]">
+                  ({product.reviews} {t("product.reviews", "reviews")})
+                </span>
               </div>
             </div>
 
@@ -238,11 +269,14 @@ export default function ProductDetails({ productId }: { productId: string }) {
             {product.weights.length > 0 && (
               <div>
                 <p className="text-sm font-bold text-[#2a2a1e] mb-2">
-                  Pack Size: <span className="text-[#3d6b35]">{selectedWeight}</span>
+                  Pack Size:{" "}
+                  <span className="text-[#3d6b35]">{selectedWeight}</span>
                 </p>
                 <div className="flex gap-2 flex-wrap">
                   {product.weights.map((w) => (
-                    <button key={w} onClick={() => setSelectedWeight(w)}
+                    <button
+                      key={w}
+                      onClick={() => setSelectedWeight(w)}
                       className={`px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                         selectedWeight === w
                           ? "bg-[#3d6b35] text-white border-[#3d6b35] shadow-sm"
@@ -259,37 +293,37 @@ export default function ProductDetails({ productId }: { productId: string }) {
             {/* Quantity + Add to Cart */}
             <div className="flex items-stretch gap-3">
               <div className="flex items-center border-2 border-[#d4c9a8] rounded-xl overflow-hidden bg-white shrink-0">
-                <button onClick={() => setQuantity(Math.max(1,quantity-1))}
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   className="w-11 h-12 flex items-center justify-center hover:bg-[#eef5ea] transition-colors active:scale-95"
                 >
                   <Minus size={18} className="text-[#3d6b35]" />
                 </button>
-                <span className="w-10 text-center text-lg font-bold text-[#2a2a1e] select-none">{quantity}</span>
-                <button onClick={() => setQuantity(quantity+1)}
+                <span className="w-10 text-center text-lg font-bold text-[#2a2a1e] select-none">
+                  {quantity}
+                </span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
                   className="w-11 h-12 flex items-center justify-center hover:bg-[#eef5ea] transition-colors active:scale-95"
                 >
                   <Plus size={18} className="text-[#3d6b35]" />
                 </button>
               </div>
-              <button onClick={handleAddToCart}
+              <button
+                onClick={handleAddToCart}
                 className={`flex-1 flex items-center justify-center gap-2 font-bold text-base px-6 py-3 rounded-xl transition-all duration-300 active:scale-[.98] shadow-md ${
-                  addedToCart ? "bg-[#2e5228] text-white" : "bg-[#3d6b35] hover:bg-[#2e5228] text-white"
+                  addedToCart
+                    ? "bg-[#2e5228] text-white"
+                    : "bg-[#3d6b35] hover:bg-[#2e5228] text-white"
                 }`}
               >
-                {addedToCart
-                  ? <><Check size={20} /><span>Added to Cart!</span></>
-                  : <><ShoppingCart size={20} /><span>{t("shop.addToCart","Add to Cart")}</span></>
-                }
+                {addedToCart ? (
+                  <><Check size={20} /><span>Added to Cart!</span></>
+                ) : (
+                  <><ShoppingCart size={20} /><span>{t("shop.addToCart", "Add to Cart")}</span></>
+                )}
               </button>
             </div>
-
-            {/* WhatsApp Order Button */}
-            <WhatsAppOrderButton
-              items={[{ name: product.name, variant: selectedWeight, quantity, price: product.price }]}
-              total={product.price * quantity}
-              size="md"
-              className="w-full"
-            />
 
             {/* Stock + SKU */}
             <div className="flex items-center justify-between text-xs flex-wrap gap-2">
@@ -311,7 +345,10 @@ export default function ProductDetails({ productId }: { productId: string }) {
                 { icon: RotateCcw,   label: "Easy returns",  sub: "within 7 days" },
                 { icon: ShieldCheck, label: "Secure pay",    sub: "trusted checkout" },
               ].map(({ icon: Icon, label, sub }) => (
-                <div key={label} className="flex flex-col items-center text-center gap-1 bg-white border border-[#e8e0d0] rounded-xl p-2.5">
+                <div
+                  key={label}
+                  className="flex flex-col items-center text-center gap-1 bg-white border border-[#e8e0d0] rounded-xl p-2.5"
+                >
                   <Icon size={18} className="text-[#3d6b35]" />
                   <span className="text-[10px] sm:text-xs font-bold text-[#2a2a1e] leading-tight">{label}</span>
                   <span className="text-[9px] sm:text-[10px] text-[#7a7a68] leading-tight">{sub}</span>
@@ -326,7 +363,8 @@ export default function ProductDetails({ productId }: { productId: string }) {
                 <p className="text-xs font-bold text-[#2a2a1e]">Not sure if this is right for you?</p>
                 <p className="text-xs text-[#7a7a68]">Call our garden experts for free advice</p>
               </div>
-              <a href="tel:+919876543210"
+              <a
+                href="tel:+919876543210"
                 className="shrink-0 bg-[#3d6b35] hover:bg-[#335c2c] text-white font-bold text-xs px-3 py-2 rounded-xl transition-colors"
               >
                 Call Us
@@ -339,8 +377,10 @@ export default function ProductDetails({ productId }: { productId: string }) {
       {/* ── Accordions ── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12 flex flex-col gap-3">
 
-        <AccordionBlock title={t("product.highlights","About This Product")}>
-          <p className="text-sm sm:text-base text-[#5a5a48] leading-relaxed mb-4">{product.description}</p>
+        <AccordionBlock title={t("product.highlights", "About This Product")}>
+          <p className="text-sm sm:text-base text-[#5a5a48] leading-relaxed mb-4">
+            {product.description}
+          </p>
           <ul className="flex flex-col gap-2.5">
             {product.highlights.map((h) => (
               <li key={h} className="flex items-start gap-3">
@@ -353,10 +393,13 @@ export default function ProductDetails({ productId }: { productId: string }) {
           </ul>
         </AccordionBlock>
 
-        <AccordionBlock title={t("product.howToUse","How to Use")}>
+        <AccordionBlock title={t("product.howToUse", "How to Use")}>
           <div className="flex flex-col sm:flex-row gap-3">
             {product.howToUse.map((item) => (
-              <div key={item.step} className="flex-1 flex gap-3 bg-[#faf7f2] border border-[#e8e0d0] rounded-xl p-3.5">
+              <div
+                key={item.step}
+                className="flex-1 flex gap-3 bg-[#faf7f2] border border-[#e8e0d0] rounded-xl p-3.5"
+              >
                 <div className="w-8 h-8 rounded-full bg-[#3d6b35] text-white font-black text-sm flex items-center justify-center shrink-0">
                   {item.step}
                 </div>
@@ -369,12 +412,8 @@ export default function ProductDetails({ productId }: { productId: string }) {
           </div>
         </AccordionBlock>
 
-        {/* ── Live Reviews accordion ── */}
         <AccordionBlock title="Customer Reviews">
-          <ProductReviews
-            productId={product.id}
-            productName={product.name}
-          />
+          <ProductReviews productId={product.id} productName={product.name} />
         </AccordionBlock>
       </div>
 
@@ -383,14 +422,18 @@ export default function ProductDetails({ productId }: { productId: string }) {
         <div className="bg-white border-t border-[#e8e0d0]">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
             <div className="mb-5">
-              <p className="text-xs font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">You may also like</p>
+              <p className="text-xs font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">
+                You may also like
+              </p>
               <h2 className="text-xl sm:text-2xl font-bold text-[#2a2a1e] font-outfit">
-                {t("product.relatedProducts","Related Products")}
+                {t("product.relatedProducts", "Related Products")}
               </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {related.map((p) => (
-                <Link key={p.id} href={`/shop/product/${p.id}`}
+                <Link
+                  key={p.id}
+                  href={`/shop/product/${p.id}`}
                   className="flex flex-col bg-[#faf7f2] rounded-2xl overflow-hidden border border-[#e8e0d0] hover:border-[#a8c890] hover:shadow-md transition-all group"
                 >
                   <div className="relative aspect-square overflow-hidden bg-white">
@@ -399,10 +442,17 @@ export default function ProductDetails({ productId }: { productId: string }) {
                         {p.badge}
                       </span>
                     )}
-                    <Image src={p.images[0]} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <Image
+                      src={p.images[0]}
+                      alt={p.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                   </div>
                   <div className="p-3">
-                    <h3 className="text-xs sm:text-sm font-bold text-[#2a2a1e] leading-snug line-clamp-2">{p.name}</h3>
+                    <h3 className="text-xs sm:text-sm font-bold text-[#2a2a1e] leading-snug line-clamp-2">
+                      {p.name}
+                    </h3>
                     <p className="text-[10px] sm:text-xs text-[#7a7a68] mt-0.5">{p.subtitle}</p>
                     <p className="text-base sm:text-lg font-black text-[#3d6b35] mt-1.5">₹{p.price}</p>
                   </div>
@@ -419,21 +469,19 @@ export default function ProductDetails({ productId }: { productId: string }) {
           <p className="text-[10px] text-[#7a7a68] truncate">{selectedWeight}</p>
           <p className="text-xl font-black text-[#3d6b35] leading-tight">₹{product.price}</p>
         </div>
-        <WhatsAppOrderButton
-          items={[{ name: product.name, variant: selectedWeight, quantity, price: product.price }]}
-          total={product.price * quantity}
-          size="sm"
-          label="WhatsApp"
-        />
-        <button onClick={handleAddToCart}
+        <button
+          onClick={handleAddToCart}
           className={`flex items-center gap-2 font-bold text-sm px-5 py-3 rounded-xl transition-all duration-300 active:scale-95 shadow-md ${
-            addedToCart ? "bg-[#2e5228] text-white" : "bg-[#3d6b35] hover:bg-[#2e5228] text-white"
+            addedToCart
+              ? "bg-[#2e5228] text-white"
+              : "bg-[#3d6b35] hover:bg-[#2e5228] text-white"
           }`}
         >
-          {addedToCart
-            ? <><Check size={18} />Added!</>
-            : <><ShoppingCart size={18} />{t("shop.addToCart","Add")}</>
-          }
+          {addedToCart ? (
+            <><Check size={18} />Added!</>
+          ) : (
+            <><ShoppingCart size={18} />{t("shop.addToCart", "Add")}</>
+          )}
         </button>
       </div>
       <div className="lg:hidden h-20" />

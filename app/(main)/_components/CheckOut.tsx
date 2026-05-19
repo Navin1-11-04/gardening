@@ -5,9 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ChevronRight, MapPin, CreditCard, CheckCircle2, 
+  ChevronRight, MapPin, CreditCard, CheckCircle2,
   Truck, ShieldCheck, Phone, Pencil, Check,
-  Wallet, Smartphone, Building2, MessageSquare, RefreshCw,
+  Wallet, Smartphone, Building2, RefreshCw, Mail,
 } from "lucide-react";
 import { useCart } from "../_context/CartContext";
 import { saveOrder, generateOrderId } from "@/lib/orderStorage";
@@ -18,13 +18,22 @@ import { useStoreConfig } from "@/lib/useStoreConfig";
 type Step = "address" | "otp" | "payment" | "review";
 
 interface Address {
-  fullName: string; phone: string; pincode: string;
-  addressLine1: string; addressLine2: string;
-  city: string; state: string; type: "Home" | "Work" | "Other";
+  fullName: string;
+  phone: string;
+  email: string; // ← NEW: required for OTP delivery + email notifications
+  pincode: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  type: "Home" | "Work" | "Other";
 }
 
 interface PaymentMethod {
-  id: string; label: string; icon: React.ReactNode; desc: string;
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  desc: string;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -78,25 +87,32 @@ const StepBar = ({ current }: { current: Step }) => {
 // ─── Field ────────────────────────────────────────────────────────────────────
 
 const Field = ({
-  label, value, onChange, placeholder, type = "text", required = false,
+  label, value, onChange, placeholder, type = "text", required = false, hint,
 }: {
   label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; type?: string; required?: boolean;
+  placeholder?: string; type?: string; required?: boolean; hint?: string;
 }) => (
   <div className="flex flex-col gap-2">
     <label className="text-base font-bold text-[#2a2a1e]">
       {label}{required && <span className="text-[#c0392b] ml-1">*</span>}
     </label>
-    <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
       className="w-full bg-white border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-3.5 text-base text-[#2a2a1e] placeholder:text-[#b0a890] outline-none transition-colors"
     />
+    {hint && <p className="text-xs text-[#7a7a68] mt-0.5">{hint}</p>}
   </div>
 );
 
 // ─── Address Step ─────────────────────────────────────────────────────────────
 
 const AddressStep = ({
-  onNext, newAddressForm, setNewAddressForm,
+  onNext,
+  newAddressForm,
+  setNewAddressForm,
 }: {
   onNext: () => void;
   newAddressForm: Address;
@@ -106,9 +122,14 @@ const AddressStep = ({
     setNewAddressForm({ ...newAddressForm, [k]: v });
 
   const isValid = !!(
-    newAddressForm.fullName && newAddressForm.phone &&
-    newAddressForm.pincode && newAddressForm.addressLine1 &&
-    newAddressForm.city && newAddressForm.state
+    newAddressForm.fullName &&
+    newAddressForm.phone &&
+    newAddressForm.email &&
+    newAddressForm.email.includes("@") &&
+    newAddressForm.pincode &&
+    newAddressForm.addressLine1 &&
+    newAddressForm.city &&
+    newAddressForm.state
   );
 
   return (
@@ -121,11 +142,47 @@ const AddressStep = ({
 
       <div className="bg-white border border-[#e8e0d0] rounded-2xl p-5 sm:p-6 flex flex-col gap-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Field label="Full Name"    value={newAddressForm.fullName}     onChange={set("fullName")}     placeholder="e.g. Meenakshi Rajan"  required />
-          <Field label="Phone Number" value={newAddressForm.phone}        onChange={set("phone")}        placeholder="e.g. 98765 43210"      type="tel" required />
+          <Field
+            label="Full Name"
+            value={newAddressForm.fullName}
+            onChange={set("fullName")}
+            placeholder="e.g. Meenakshi Rajan"
+            required
+          />
+          <Field
+            label="Phone Number"
+            value={newAddressForm.phone}
+            onChange={set("phone")}
+            placeholder="e.g. 98765 43210"
+            type="tel"
+            required
+          />
         </div>
-        <Field label="Address Line 1" value={newAddressForm.addressLine1} onChange={set("addressLine1")} placeholder="House no., Street, Area" required />
-        <Field label="Address Line 2 (optional)" value={newAddressForm.addressLine2} onChange={set("addressLine2")} placeholder="Landmark" />
+
+        {/* EMAIL FIELD — required for OTP and order notifications */}
+        <Field
+          label="Email Address"
+          value={newAddressForm.email}
+          onChange={set("email")}
+          placeholder="e.g. meenakshi@gmail.com"
+          type="email"
+          required
+          hint="Your verification code and order updates will be sent here"
+        />
+
+        <Field
+          label="Address Line 1"
+          value={newAddressForm.addressLine1}
+          onChange={set("addressLine1")}
+          placeholder="House no., Street, Area"
+          required
+        />
+        <Field
+          label="Address Line 2 (optional)"
+          value={newAddressForm.addressLine2}
+          onChange={set("addressLine2")}
+          placeholder="Landmark, nearby area"
+        />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <Field label="Pincode"     value={newAddressForm.pincode} onChange={set("pincode")} placeholder="6-digit pincode" required />
           <Field label="City / Town" value={newAddressForm.city}    onChange={set("city")}    placeholder="e.g. Namakkal"   required />
@@ -135,9 +192,14 @@ const AddressStep = ({
           <label className="text-base font-bold text-[#2a2a1e] block mb-2">Address Type</label>
           <div className="flex gap-3 flex-wrap">
             {(["Home", "Work", "Other"] as const).map((t) => (
-              <button key={t} type="button" onClick={() => setNewAddressForm({ ...newAddressForm, type: t })}
+              <button
+                key={t}
+                type="button"
+                onClick={() => setNewAddressForm({ ...newAddressForm, type: t })}
                 className={`px-5 py-2.5 rounded-xl text-base font-bold border-2 transition-all ${
-                  newAddressForm.type === t ? "bg-[#3d6b35] text-white border-[#3d6b35]" : "bg-white text-[#5a5a48] border-[#d4c9a8] hover:border-[#3d6b35]"
+                  newAddressForm.type === t
+                    ? "bg-[#3d6b35] text-white border-[#3d6b35]"
+                    : "bg-white text-[#5a5a48] border-[#d4c9a8] hover:border-[#3d6b35]"
                 }`}
               >
                 {t === "Home" ? "🏠" : t === "Work" ? "💼" : "📍"} {t}
@@ -147,7 +209,9 @@ const AddressStep = ({
         </div>
       </div>
 
-      <button onClick={onNext} disabled={!isValid}
+      <button
+        onClick={onNext}
+        disabled={!isValid}
         className="w-full flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md"
       >
         Continue to Verify Phone <ChevronRight size={22} />
@@ -156,15 +220,20 @@ const AddressStep = ({
   );
 };
 
-// ─── OTP Step — improved for elderly users ────────────────────────────────────
-// OtpStep — updated for auto-verify flow (no SMS)
-// Replace only the OtpStep component in CheckOut.tsx with this version.
-// The rest of CheckOut.tsx stays exactly the same.
+// ─── OTP Step ─────────────────────────────────────────────────────────────────
 
 const OtpStep = ({
-  phone, onVerified, onBack,
+  phone,
+  email,
+  name,
+  onVerified,
+  onBack,
 }: {
-  phone: string; onVerified: () => void; onBack: () => void;
+  phone: string;
+  email: string;
+  name: string;
+  onVerified: () => void;
+  onBack: () => void;
 }) => {
   const [otp,         setOtp]         = useState("");
   const [sending,     setSending]     = useState(false);
@@ -173,7 +242,7 @@ const OtpStep = ({
   const [countdown,   setCountdown]   = useState(0);
   const [sendError,   setSendError]   = useState("");
   const [verifyError, setVerifyError] = useState("");
-  const [devOtp,      setDevOtp]      = useState(""); // dev only
+  const [devOtp,      setDevOtp]      = useState("");
 
   const startCountdown = () => {
     setCountdown(30);
@@ -188,15 +257,19 @@ const OtpStep = ({
     setVerifyError("");
     setOtp("");
     try {
-      const res  = await fetch("/api/otp/send", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
+      const res = await fetch("/api/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // Pass email and name so the OTP email can be personalised
+        body: JSON.stringify({ phone, email, name }),
       });
       const data = await res.json();
-      if (!res.ok) { setSendError(data.error ?? "Failed to generate code. Please try again."); return; }
+      if (!res.ok) {
+        setSendError(data.error ?? "Failed to send code. Please try again.");
+        return;
+      }
       setSent(true);
       startCountdown();
-      // In dev mode, auto-fill OTP for easy testing
       if (data.devOtp) setDevOtp(data.devOtp);
     } catch {
       setSendError("Network error. Please check your connection and try again.");
@@ -210,8 +283,9 @@ const OtpStep = ({
     setVerifying(true);
     setVerifyError("");
     try {
-      const res  = await fetch("/api/otp/verify", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await fetch("/api/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, otp }),
       });
       const data = await res.json();
@@ -220,7 +294,7 @@ const OtpStep = ({
           setVerifyError("Code expired. Please request a new one.");
           setSent(false);
         } else {
-          setVerifyError(data.error ?? "Incorrect code. Please check and try again.");
+          setVerifyError(data.error ?? "Incorrect code. Please check your email and try again.");
         }
         return;
       }
@@ -233,6 +307,7 @@ const OtpStep = ({
   };
 
   const displayPhone = phone.replace(/\D/g, "").slice(-10).replace(/(\d{5})(\d{5})/, "$1 $2");
+  const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, (_, a, b, c) => a + "*".repeat(Math.min(b.length, 4)) + c);
 
   return (
     <div className="flex flex-col gap-6">
@@ -240,21 +315,31 @@ const OtpStep = ({
         <p className="text-sm font-semibold text-[#7a9e5f] uppercase tracking-wide mb-1">Step 2</p>
         <h2 className="text-2xl sm:text-3xl font-bold text-[#2a2a1e] font-outfit">Verify Your Phone</h2>
         <p className="text-base text-[#7a7a68] mt-1">
-          We'll generate a one-time code to confirm your order.
+          We'll send a code to your email to confirm your order.
         </p>
       </div>
 
       <div className="bg-white border border-[#e8e0d0] rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
-        {/* Phone display */}
-        <div className="flex items-center gap-3 bg-[#eef5ea] border border-[#b8d4a0] rounded-2xl px-4 py-3">
-          <Phone size={20} className="text-[#3d6b35] shrink-0" />
-          <div>
-            <p className="text-xs text-[#5a7a50] font-semibold">Verifying phone</p>
-            <p className="text-lg font-black text-[#2a2a1e]">+91 {displayPhone}</p>
+
+        {/* Phone + Email display */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3 bg-[#eef5ea] border border-[#b8d4a0] rounded-2xl px-4 py-3">
+            <Phone size={18} className="text-[#3d6b35] shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs text-[#5a7a50] font-semibold">Phone</p>
+              <p className="text-base font-black text-[#2a2a1e]">+91 {displayPhone}</p>
+            </div>
+            <button onClick={onBack} className="text-sm font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
+              <Pencil size={13} />Change
+            </button>
           </div>
-          <button onClick={onBack} className="ml-auto text-sm font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
-            <Pencil size={13} />Change
-          </button>
+          <div className="flex items-center gap-3 bg-[#f0f7ff] border border-[#b8d0f0] rounded-2xl px-4 py-3">
+            <Mail size={18} className="text-[#2b6cb0] shrink-0" />
+            <div>
+              <p className="text-xs text-[#2b6cb0] font-semibold">Code will be sent to</p>
+              <p className="text-base font-bold text-[#2a2a1e]">{maskedEmail}</p>
+            </div>
+          </div>
         </div>
 
         {!sent ? (
@@ -264,40 +349,51 @@ const OtpStep = ({
                 {sendError}
               </div>
             )}
-            <button onClick={handleSendOtp} disabled={sending}
+            <button
+              onClick={handleSendOtp}
+              disabled={sending}
               className="w-full flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] text-white font-bold text-lg py-4 rounded-xl transition-all"
             >
               {sending
-                ? <><RefreshCw size={20} className="animate-spin" />Please wait…</>
-                : <><CheckCircle2 size={20} />Get Verification Code</>
+                ? <><RefreshCw size={20} className="animate-spin" />Sending…</>
+                : <><Mail size={20} />Send Verification Code to Email</>
               }
             </button>
             <p className="text-sm text-center text-[#a8a090]">
-              A 6-digit code will be generated for you to enter below.
+              A 6-digit code will be sent to <strong>{maskedEmail}</strong>
             </p>
           </>
         ) : (
           <>
             <div className="bg-[#eef5ea] border border-[#b8d4a0] rounded-xl px-4 py-3">
-              <p className="text-sm font-bold text-[#2a2a1e]">✅ Code generated for +91 {displayPhone}</p>
-              <p className="text-xs text-[#7a7a68] mt-0.5">Enter the 6-digit code below to continue.</p>
+              <p className="text-sm font-bold text-[#2a2a1e]">
+                ✅ Code sent to <strong>{maskedEmail}</strong>
+              </p>
+              <p className="text-xs text-[#7a7a68] mt-0.5">
+                Check your inbox (and spam folder). Enter the 6-digit code below.
+              </p>
               {/* Dev-only helper */}
               {devOtp && (
-                <p className="text-xs text-[#3d6b35] font-bold mt-1">
-                  🛠 Dev mode — your code: <span className="font-mono tracking-widest">{devOtp}</span>
+                <p className="text-xs text-[#3d6b35] font-bold mt-1 bg-yellow-50 border border-yellow-200 rounded px-2 py-1">
+                  🛠 Dev mode — code: <span className="font-mono tracking-widest text-base">{devOtp}</span>
                 </p>
               )}
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-base font-bold text-[#2a2a1e]">Enter the 6-digit code</label>
+              <label className="text-base font-bold text-[#2a2a1e]">
+                Enter the 6-digit code from your email
+              </label>
               <input
                 type="tel"
                 inputMode="numeric"
                 maxLength={6}
                 value={otp}
-                onChange={(e) => { setVerifyError(""); setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); }}
-                placeholder="______"
+                onChange={(e) => {
+                  setVerifyError("");
+                  setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                }}
+                placeholder="_ _ _ _ _ _"
                 className="w-full text-center text-4xl font-black tracking-[1.2rem] bg-[#faf7f2] border-2 border-[#d4c9a8] focus:border-[#3d6b35] rounded-xl px-4 py-5 outline-none transition-colors"
                 autoFocus
               />
@@ -308,7 +404,9 @@ const OtpStep = ({
               )}
             </div>
 
-            <button onClick={handleVerify} disabled={verifying || otp.length !== 6}
+            <button
+              onClick={handleVerify}
+              disabled={verifying || otp.length !== 6}
               className="w-full flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl transition-all"
             >
               {verifying
@@ -319,12 +417,14 @@ const OtpStep = ({
 
             <div className="text-center">
               {countdown > 0 ? (
-                <p className="text-sm text-[#a8a090]">Request new code in {countdown}s</p>
+                <p className="text-sm text-[#a8a090]">Resend code in {countdown}s</p>
               ) : (
-                <button onClick={handleSendOtp} disabled={sending}
+                <button
+                  onClick={handleSendOtp}
+                  disabled={sending}
                   className="text-base font-semibold text-[#3d6b35] hover:underline disabled:opacity-50"
                 >
-                  {sending ? "Please wait…" : "🔄 Get a new code"}
+                  {sending ? "Sending…" : "🔄 Resend code"}
                 </button>
               )}
             </div>
@@ -336,12 +436,15 @@ const OtpStep = ({
       <div className="bg-[#faf7f2] border border-[#d4c9a8] rounded-2xl px-5 py-4 flex items-center gap-3">
         <Phone size={18} className="text-[#3d6b35] shrink-0" />
         <div>
-          <p className="text-sm font-bold text-[#2a2a1e]">Having trouble? Call us for help!</p>
-          <a href="tel:+919876543210" className="text-base font-bold text-[#3d6b35] hover:underline">+91 98765 43210</a>
+          <p className="text-sm font-bold text-[#2a2a1e]">Didn't get the email? Check spam folder or call us!</p>
+          <a href="tel:+919876543210" className="text-base font-bold text-[#3d6b35] hover:underline">
+            +91 98765 43210
+          </a>
         </div>
       </div>
 
-      <button onClick={onBack}
+      <button
+        onClick={onBack}
         className="w-full flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all"
       >
         ← Back to Address
@@ -375,9 +478,14 @@ const PaymentStep = ({
 
       <div className="flex flex-col gap-3">
         {available.map((method) => (
-          <button key={method.id} type="button" onClick={() => setSelected(method.id)}
+          <button
+            key={method.id}
+            type="button"
+            onClick={() => setSelected(method.id)}
             className={`w-full flex items-center gap-4 p-4 sm:p-5 rounded-2xl border-2 transition-all text-left ${
-              selected === method.id ? "border-[#3d6b35] bg-[#eef5ea]" : "border-[#e8e0d0] bg-white hover:border-[#a8c890]"
+              selected === method.id
+                ? "border-[#3d6b35] bg-[#eef5ea]"
+                : "border-[#e8e0d0] bg-white hover:border-[#a8c890]"
             }`}
           >
             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
@@ -412,10 +520,15 @@ const PaymentStep = ({
       )}
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <button onClick={onBack} className="sm:w-40 flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all">
+        <button
+          onClick={onBack}
+          className="sm:w-40 flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all"
+        >
           ← Back
         </button>
-        <button onClick={onNext} disabled={!selected}
+        <button
+          onClick={onNext}
+          disabled={!selected}
           className="flex-1 flex items-center justify-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] disabled:cursor-not-allowed text-white font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md"
         >
           Review Order <ChevronRight size={22} />
@@ -448,7 +561,7 @@ const ReviewStep = ({
       <div className="flex items-center gap-2 bg-[#eef5ea] border border-[#b8d4a0] rounded-xl px-4 py-3">
         <CheckCircle2 size={18} className="text-[#3d6b35] shrink-0" />
         <p className="text-sm font-semibold text-[#3d6b35]">
-          Phone <span className="font-black">+91 {address.phone.replace(/\D/g,"").slice(-10).replace(/(\d{5})(\d{5})/,"$1 $2")}</span> verified ✓
+          Phone <span className="font-black">+91 {address.phone.replace(/\D/g, "").slice(-10).replace(/(\d{5})(\d{5})/, "$1 $2")}</span> verified ✓
         </p>
       </div>
 
@@ -464,6 +577,7 @@ const ReviewStep = ({
           </button>
         </div>
         <p className="text-base font-bold text-[#2a2a1e]">{address.fullName} · 📞 {address.phone}</p>
+        <p className="text-sm text-[#7a7a68] mt-0.5">📧 {address.email}</p>
         <p className="text-sm text-[#5a5a48] mt-1 leading-snug">
           {address.addressLine1}{address.addressLine2 ? `, ${address.addressLine2}` : ""}, {address.city}, {address.state} — {address.pincode}
         </p>
@@ -526,15 +640,20 @@ const ReviewStep = ({
       <p className="text-sm text-[#7a7a68] leading-relaxed">
         By placing this order, you agree to our{" "}
         <Link href="/privacy" className="text-[#3d6b35] font-semibold underline underline-offset-2">Terms & Conditions</Link>.
+        Your order confirmation will be emailed to <strong>{address.email}</strong>.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <button onClick={onBack} disabled={placing}
+        <button
+          onClick={onBack}
+          disabled={placing}
           className="sm:w-40 flex items-center justify-center gap-2 bg-white border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#5a5a48] hover:text-[#3d6b35] font-bold text-base py-3.5 rounded-xl transition-all disabled:opacity-50"
         >
           ← Back
         </button>
-        <button onClick={onPlace} disabled={placing}
+        <button
+          onClick={onPlace}
+          disabled={placing}
           className="flex-1 flex items-center justify-center gap-3 bg-[#3d6b35] hover:bg-[#2e5228] disabled:bg-[#a8c890] text-white font-bold text-lg py-4 rounded-xl transition-all active:scale-[.98] shadow-md"
         >
           {placing
@@ -606,8 +725,8 @@ const OrderSummary = ({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const EMPTY_ADDRESS: Address = {
-  fullName: "", phone: "", pincode: "", addressLine1: "",
-  addressLine2: "", city: "", state: "", type: "Home",
+  fullName: "", phone: "", email: "", pincode: "",
+  addressLine1: "", addressLine2: "", city: "", state: "", type: "Home",
 };
 
 export default function CheckoutPage() {
@@ -618,11 +737,11 @@ export default function CheckoutPage() {
   const FREE_DELIVERY_THRESHOLD = config.freeDeliveryThreshold;
   const DELIVERY_FEE            = config.deliveryFee;
 
-  const [step,            setStep]            = useState<Step>("address");
-  const [addressForm,     setAddressForm]      = useState<Address>(EMPTY_ADDRESS);
-  const [selectedPayment, setSelectedPayment]  = useState("cod");
-  const [placing,         setPlacing]          = useState(false);
-  const [placeError,      setPlaceError]       = useState("");
+  const [step,            setStep]           = useState<Step>("address");
+  const [addressForm,     setAddressForm]     = useState<Address>(EMPTY_ADDRESS);
+  const [selectedPayment, setSelectedPayment] = useState("cod");
+  const [placing,         setPlacing]         = useState(false);
+  const [placeError,      setPlaceError]      = useState("");
 
   const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
   const total       = subtotal + deliveryFee;
@@ -631,19 +750,23 @@ export default function CheckoutPage() {
     setPlacing(true);
     setPlaceError("");
     try {
-      const res  = await fetch("/api/orders/create", {
+      const res = await fetch("/api/orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items, address: addressForm, paymentMethod: selectedPayment,
-          subtotal, deliveryFee, couponDiscount: 0,
+          items,
+          address: addressForm,
+          paymentMethod: selectedPayment,
+          subtotal,
+          deliveryFee,
+          couponDiscount: 0,
+          customerEmail: addressForm.email, // ← pass email for notifications
         }),
       });
       const data = await res.json();
 
       if (!res.ok) {
         if (data.requiresOtp) {
-          // OTP cookie expired — send back to OTP step with message
           setStep("otp");
           setPlaceError("Your verification expired. Please verify your phone again.");
           setPlacing(false);
@@ -654,30 +777,59 @@ export default function CheckoutPage() {
         return;
       }
 
+      // Build the stored order object (used for "My Orders" localStorage cache)
+      const storedOrder = {
+        id: data.orderId,
+        date: new Date().toISOString(),
+        status: "confirmed",
+        paymentMethod: selectedPayment === "cod" ? "Cash on Delivery" : "Online Payment",
+        address: {
+          name: addressForm.fullName,
+          phone: addressForm.phone,
+          line1: addressForm.addressLine1,
+          line2: addressForm.addressLine2,
+          city: addressForm.city,
+          state: addressForm.state,
+          pincode: addressForm.pincode,
+        },
+        items: items.map((i) => ({
+          id: i.id,
+          name: i.name,
+          variant: i.variant ?? "",
+          price: i.price,
+          quantity: i.quantity,
+          image: i.image,
+        })),
+        subtotal,
+        deliveryFee,
+        couponDiscount: 0,
+        total,
+      };
+
       if (!data.paymentRequired) {
-        saveOrder({
-          id: data.orderId, date: new Date().toISOString(), status: "confirmed",
-          paymentMethod: "Cash on Delivery",
-          address: {
-            name: addressForm.fullName, phone: addressForm.phone,
-            line1: addressForm.addressLine1, line2: addressForm.addressLine2,
-            city: addressForm.city, state: addressForm.state, pincode: addressForm.pincode,
-          },
-          items: items.map((i) => ({ id: i.id, name: i.name, variant: i.variant ?? "", price: i.price, quantity: i.quantity, image: i.image })),
-          subtotal, deliveryFee, couponDiscount: 0, total,
-        });
+        // COD — save to localStorage and redirect
+        saveOrder(storedOrder);
         clearCart();
         router.push(`/order-confirmation?id=${data.orderId}`);
         return;
       }
 
-      // Razorpay online payment
+      // Online payment via Razorpay
       const options = {
-        key: data.keyId, amount: data.amount, currency: data.currency,
-        name: "Kavin Organics", description: "Garden supplies order",
-        order_id: data.razorpayOrderId, prefill: data.prefill,
+        key: data.keyId,
+        amount: data.amount,
+        currency: data.currency,
+        name: "Kavin Organics",
+        description: "Garden supplies order",
+        order_id: data.razorpayOrderId,
+        prefill: data.prefill,
         theme: { color: "#3d6b35" },
-        handler: () => { clearCart(); router.push(`/order-confirmation?id=${data.orderId}`); },
+        handler: () => {
+          // ← FIXED: also save to localStorage for Razorpay paid orders
+          saveOrder({ ...storedOrder, paymentMethod: "Online Payment", status: "confirmed" });
+          clearCart();
+          router.push(`/order-confirmation?id=${data.orderId}`);
+        },
         modal: { ondismiss: () => setPlacing(false) },
       };
       // @ts-ignore
@@ -722,7 +874,6 @@ export default function CheckoutPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <StepBar current={step} />
 
-        {/* Global error (e.g. OTP expired on place order) */}
         {placeError && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-sm text-red-700 font-semibold">
             {placeError}
@@ -741,24 +892,34 @@ export default function CheckoutPage() {
             {step === "otp" && (
               <OtpStep
                 phone={addressForm.phone}
+                email={addressForm.email}
+                name={addressForm.fullName}
                 onVerified={() => { setPlaceError(""); setStep("payment"); }}
                 onBack={() => setStep("address")}
               />
             )}
             {step === "payment" && (
               <PaymentStep
-                onNext={() => setStep("review")} onBack={() => setStep("otp")}
-                selected={selectedPayment} setSelected={setSelectedPayment}
+                onNext={() => setStep("review")}
+                onBack={() => setStep("otp")}
+                selected={selectedPayment}
+                setSelected={setSelectedPayment}
                 total={total}
-                allowCOD={config.allowCOD} allowUPI={config.allowUPI} allowCard={config.allowCard}
+                allowCOD={config.allowCOD}
+                allowUPI={config.allowUPI}
+                allowCard={config.allowCard}
               />
             )}
             {step === "review" && (
               <ReviewStep
-                onPlace={handlePlaceOrder} onBack={() => setStep("payment")}
-                paymentMethod={selectedPayment} subtotal={subtotal}
-                deliveryFee={deliveryFee} total={total}
-                address={addressForm} placing={placing}
+                onPlace={handlePlaceOrder}
+                onBack={() => setStep("payment")}
+                paymentMethod={selectedPayment}
+                subtotal={subtotal}
+                deliveryFee={deliveryFee}
+                total={total}
+                address={addressForm}
+                placing={placing}
               />
             )}
           </div>

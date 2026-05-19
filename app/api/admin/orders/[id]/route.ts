@@ -21,18 +21,19 @@ export async function GET(
 
     const o = order as any;
     return NextResponse.json({
-      id:            o._id.toString(),
-      orderNumber:   o.orderNumber,
-      customerName:  o.customerName,
-      customerPhone: o.customerPhone,
-      total:         o.total,
-      subtotal:      o.subtotal ?? o.total,
-      deliveryFee:   o.deliveryFee ?? 0,
-      status:        o.status,
-      paymentMethod: o.paymentMethod,
-      createdAt:     o.createdAt,
-      items:         o.items ?? [],
-      address:       o.address ?? null,
+      id:             o._id.toString(),
+      orderNumber:    o.orderNumber,
+      customerName:   o.customerName,
+      customerPhone:  o.customerPhone,
+      customerEmail:  o.customerEmail ?? "",
+      total:          o.total,
+      subtotal:       o.subtotal ?? o.total,
+      deliveryFee:    o.deliveryFee ?? 0,
+      status:         o.status,
+      paymentMethod:  o.paymentMethod,
+      createdAt:      o.createdAt,
+      items:          o.items ?? [],
+      address:        o.address ?? null,
     });
   } catch (error) {
     console.error("Get order error:", error);
@@ -51,56 +52,58 @@ export async function PATCH(
     const { id } = await params;
     const { status } = await request.json();
 
-    const valid = ["pending", "processing", "shipped", "delivered", "cancelled", "refunded"];
+    const valid = [
+      "pending", "processing", "shipped",
+      "delivered", "cancelled", "refunded",
+    ];
     if (!valid.includes(status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
     await connectDB();
-    const order = await Order.findByIdAndUpdate(id, { status }, { new: true }).lean();
+    const order = await Order.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    ).lean();
+
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
     const o = order as any;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
 
-    // ── Fire customer notifications on meaningful status changes ───────────────
-    if (status === "shipped" || status === "delivered") {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
-
-      const notifyPayload = {
+    // ── Fire customer email for shipped / delivered ────────────────────────────
+    if ((status === "shipped" || status === "delivered") && o.customerEmail) {
+      const emailPayload = {
         orderNumber:   o.orderNumber,
         customerName:  o.customerName,
-        customerPhone: o.customerPhone,
         customerEmail: o.customerEmail,
+        customerPhone: o.customerPhone,
         status,
-        total:         o.total,
-        items:         (o.items ?? []).map((i: any) => ({
+        total:  o.total,
+        items: (o.items ?? []).map((i: any) => ({
           name:     i.name,
           quantity: i.quantity,
         })),
         address: o.address ?? {},
       };
 
-      // Fire-and-forget — don't block the admin response
-      fetch(`${baseUrl}/api/notify/whatsapp/status`, {
+      // Status update email (shipped / delivered template)
+      fetch(`${baseUrl}/api/notify/email/status`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(notifyPayload),
+        body:    JSON.stringify(emailPayload),
       }).catch(console.error);
-
-      if (o.customerEmail) {
-        fetch(`${baseUrl}/api/notify/email/status`, {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify(notifyPayload),
-        }).catch(console.error);
-      }
     }
 
     return NextResponse.json({ message: "Status updated", status });
   } catch (error) {
     console.error("Update order error:", error);
-    return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update order" },
+      { status: 500 }
+    );
   }
 }
