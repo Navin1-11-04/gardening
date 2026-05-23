@@ -11,7 +11,7 @@ export async function GET() {
   try {
     await connectDB();
 
-    // ── Recent orders (last 10) ───────────────────────────────────────────────
+    // Recent 10 orders
     const recentOrders = await Order.find()
       .sort({ createdAt: -1 })
       .limit(10)
@@ -19,25 +19,25 @@ export async function GET() {
       .lean();
 
     const orders = recentOrders.map((o: any) => ({
-      id:           o._id.toString(),
-      orderNumber:  o.orderNumber,
-      customer:     o.customerName,
-      amount:       o.total,
-      status:       o.status,
-      time:         o.createdAt,
+      id:            o._id.toString(),
+      orderNumber:   o.orderNumber,
+      customer:      o.customerName,
+      amount:        o.total,
+      status:        o.status,
+      time:          o.createdAt,
       paymentMethod: o.paymentMethod,
     }));
 
-    // ── Top products by sales (aggregate from order items) ────────────────────
+    // Top 5 products by sales from order items
     const topProductsAgg = await Order.aggregate([
       { $match: { status: { $nin: ["cancelled", "refunded"] } } },
       { $unwind: "$items" },
       {
         $group: {
-          _id:      "$items.name",
-          sales:    { $sum: "$items.quantity" },
-          revenue:  { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
-          image:    { $first: "$items.image" },
+          _id:     "$items.name",
+          sales:   { $sum: "$items.quantity" },
+          revenue: { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
+          image:   { $first: "$items.image" },
         },
       },
       { $sort: { sales: -1 } },
@@ -51,14 +51,14 @@ export async function GET() {
       image:   p.image ?? "",
     }));
 
-    // ── Status breakdown counts ───────────────────────────────────────────────
+    // Status breakdown
     const statusAgg = await Order.aggregate([
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
     const statusBreakdown: Record<string, number> = {};
     for (const s of statusAgg) statusBreakdown[s._id] = s.count;
 
-    // ── Low stock products ────────────────────────────────────────────────────
+    // Low stock products (5 or fewer)
     const lowStockItems = await Product.find({ active: true, stock: { $lte: 5 } })
       .select("name sku stock")
       .limit(5)
@@ -74,6 +74,6 @@ export async function GET() {
     return NextResponse.json({ orders, topProducts, statusBreakdown, lowStock });
   } catch (error) {
     console.error("Dashboard live error:", error);
-    return NextResponse.json({ error: "Failed to fetch dashboard data" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch live data" }, { status: 500 });
   }
 }

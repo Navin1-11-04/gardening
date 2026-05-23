@@ -4,7 +4,7 @@ export interface IOrder extends Document {
   orderNumber:        string;
   customerName:       string;
   customerPhone?:     string;
-  customerEmail?:     string;
+  customerEmail?:     string;        // ← now consistently stored on all orders
   total:              number;
   subtotal:           number;
   deliveryFee:        number;
@@ -39,7 +39,7 @@ const OrderSchema = new Schema<IOrder>(
     orderNumber:        { type: String, required: true, unique: true },
     customerName:       { type: String, required: true },
     customerPhone:      { type: String },
-    customerEmail:      { type: String },
+    customerEmail:      { type: String },              // ← stored for email notifications
     total:              { type: Number, required: true },
     subtotal:           { type: Number, required: true },
     deliveryFee:        { type: Number, default: 0 },
@@ -75,9 +75,15 @@ const OrderSchema = new Schema<IOrder>(
   { timestamps: true }
 );
 
-// Index for fast lookups by status and date (useful for admin orders page)
+// ── Indexes ────────────────────────────────────────────────────────────────────
+// Fast lookups by status + date (admin orders page)
 OrderSchema.index({ status: 1, createdAt: -1 });
+// Fast lookup by phone (track order)
 OrderSchema.index({ customerPhone: 1 });
+// Fast lookup by email (future: customer account page)
+OrderSchema.index({ customerEmail: 1 });
+// Fast lookup by order number
+OrderSchema.index({ orderNumber: 1 });
 
 export const Order: Model<IOrder> =
   mongoose.models.Order ?? mongoose.model<IOrder>("Order", OrderSchema);

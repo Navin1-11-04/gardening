@@ -2,13 +2,8 @@
 
 import { useState, useRef } from "react";
 import {
-  X,
-  Loader2,
-  Plus,
-  Trash2,
-  Image as ImageIcon,
-  Upload,
-  Link as LinkIcon,
+  X, Loader2, Plus, Trash2, Image as ImageIcon,
+  Upload, Link as LinkIcon, AlertTriangle,
 } from "lucide-react";
 
 interface ProductFormModalProps {
@@ -19,10 +14,15 @@ interface ProductFormModalProps {
 }
 
 type ImageEntry = {
-  url: string;          // final Cloudinary URL (or preview before upload)
+  url: string;
   uploading: boolean;
   error?: string;
+  isPinterest?: boolean;
 };
+
+function isPinterestUrl(url: string): boolean {
+  return url.includes("pinimg.com") || url.includes("pinterest.com");
+}
 
 export default function ProductFormModal({
   product,
@@ -31,43 +31,48 @@ export default function ProductFormModal({
   onSave,
 }: ProductFormModalProps) {
   const [formData, setFormData] = useState({
-    name: product?.name || "",
-    nameTa: product?.nameTa || "",
-    subtitle: product?.subtitle || "",
-    description: product?.description || "",
-    categoryId: product?.categoryId || "",
-    price: product?.price || "",
+    name:          product?.name          || "",
+    nameTa:        product?.nameTa        || "",
+    subtitle:      product?.subtitle      || "",
+    description:   product?.description   || "",
+    categoryId:    product?.categoryId    || "",
+    price:         product?.price         || "",
     originalPrice: product?.originalPrice || "",
-    sku: product?.sku || "",
-    stock: product?.stock || "",
-    badge: product?.badge || "",
-    active: product?.active ?? true,
+    sku:           product?.sku           || "",
+    stock:         product?.stock         || "",
+    badge:         product?.badge         || "",
+    active:        product?.active        ?? true,
   });
 
-  // Parse existing images
   const parseImages = (): ImageEntry[] => {
-    const imgs: string[] = Array.isArray(product?.images)
-      ? product.images
-      : [];
+    const imgs: string[] = Array.isArray(product?.images) ? product.images : [];
     if (imgs.length === 0) return [{ url: "", uploading: false }];
-    return imgs.map((url) => ({ url, uploading: false }));
+    return imgs.map((url) => ({
+      url,
+      uploading:   false,
+      isPinterest: isPinterestUrl(url),
+    }));
   };
 
-  const [images, setImages] = useState<ImageEntry[]>(parseImages);
+  const [images,     setImages]     = useState<ImageEntry[]>(parseImages);
   const [highlights, setHighlights] = useState<string[]>(
     product?.highlights?.length ? product.highlights : [""]
   );
   const [weights, setWeights] = useState<string[]>(
     product?.weights?.length ? product.weights : [""]
   );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  // Toggle between URL input and file upload per image slot
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState("");
   const [inputMode, setInputMode] = useState<("url" | "file")[]>(
     parseImages().map(() => "url")
   );
 
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Check if any images are still using Pinterest (hotlink risk)
+  const hasPinterestImages = images.some(
+    (img) => img.url && isPinterestUrl(img.url)
+  );
 
   // ── Image handlers ──────────────────────────────────────────────────────────
 
@@ -78,7 +83,11 @@ export default function ProductFormModal({
   };
 
   const handleUrlChange = (index: number, value: string) => {
-    updateImage(index, { url: value, error: undefined });
+    updateImage(index, {
+      url:         value,
+      error:       undefined,
+      isPinterest: isPinterestUrl(value),
+    });
   };
 
   const handleFileChange = async (
@@ -88,25 +97,33 @@ export default function ProductFormModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Local preview
     const reader = new FileReader();
     reader.onload = async () => {
       const base64 = reader.result as string;
-      updateImage(index, { url: base64, uploading: true, error: undefined });
+      updateImage(index, {
+        url:         base64,
+        uploading:   true,
+        error:       undefined,
+        isPinterest: false,
+      });
 
       try {
         const res = await fetch("/api/admin/upload", {
-          method: "POST",
+          method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ source: base64 }),
+          body:    JSON.stringify({ source: base64 }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Upload failed");
-        updateImage(index, { url: data.url, uploading: false });
+        updateImage(index, {
+          url:         data.url,
+          uploading:   false,
+          isPinterest: false,
+        });
       } catch (err: any) {
         updateImage(index, {
           uploading: false,
-          error: err.message || "Upload failed",
+          error:     err.message || "Upload failed",
         });
       }
     };
@@ -115,13 +132,13 @@ export default function ProductFormModal({
 
   const addImageSlot = () => {
     setImages((prev) => [...prev, { url: "", uploading: false }]);
-    setInputMode((prev) => [...prev, "url"]);
+    setInputMode((prev) => [...prev, "file"]); // default to file upload for new slots
   };
 
   const removeImageSlot = (index: number) => {
     if (images.length <= 1) {
       setImages([{ url: "", uploading: false }]);
-      setInputMode(["url"]);
+      setInputMode(["file"]);
       return;
     }
     setImages((prev) => prev.filter((_, i) => i !== index));
@@ -134,7 +151,7 @@ export default function ProductFormModal({
     );
   };
 
-  // ── Field handlers ─────────────────────────────────────────────────────────
+  // ── Field handlers ──────────────────────────────────────────────────────────
 
   const handleChange = (e: any) => {
     const { name, value, type, checked } = e.target;
@@ -146,13 +163,13 @@ export default function ProductFormModal({
 
   const handleHighlightChange = (i: number, v: string) =>
     setHighlights((prev) => prev.map((h, idx) => (idx === i ? v : h)));
-  const addHighlight = () => setHighlights((prev) => [...prev, ""]);
+  const addHighlight    = () => setHighlights((prev) => [...prev, ""]);
   const removeHighlight = (i: number) =>
     setHighlights((prev) => prev.filter((_, idx) => idx !== i));
 
   const handleWeightChange = (i: number, v: string) =>
     setWeights((prev) => prev.map((w, idx) => (idx === i ? v : w)));
-  const addWeight = () => setWeights((prev) => [...prev, ""]);
+  const addWeight    = () => setWeights((prev) => [...prev, ""]);
   const removeWeight = (i: number) =>
     setWeights((prev) => prev.filter((_, idx) => idx !== i));
 
@@ -162,7 +179,6 @@ export default function ProductFormModal({
     e.preventDefault();
     setError("");
 
-    // Check no images still uploading
     if (images.some((img) => img.uploading)) {
       setError("Please wait for all images to finish uploading.");
       return;
@@ -177,7 +193,7 @@ export default function ProductFormModal({
     setLoading(true);
     try {
       const method = product ? "PUT" : "POST";
-      const url = product
+      const url    = product
         ? `/api/admin/products/${product.id}`
         : "/api/admin/products";
 
@@ -186,9 +202,9 @@ export default function ProductFormModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          images: validImages,
+          images:     validImages,
           highlights: highlights.filter((h) => h.trim()),
-          weights: weights.filter((w) => w.trim()),
+          weights:    weights.filter((w) => w.trim()),
         }),
       });
 
@@ -207,7 +223,7 @@ export default function ProductFormModal({
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -234,6 +250,22 @@ export default function ProductFormModal({
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
+            </div>
+          )}
+
+          {/* Pinterest warning */}
+          {hasPinterestImages && (
+            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-amber-800">
+                  Pinterest images detected
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Pinterest may block image hotlinking, causing broken images on your store.
+                  Please upload these images using the "Upload file" button instead.
+                </p>
+              </div>
             </div>
           )}
 
@@ -318,11 +350,10 @@ export default function ProductFormModal({
               <input
                 type="text"
                 name="sku"
-                placeholder="SKU"
+                placeholder="SKU (leave blank to auto-generate)"
                 value={formData.sku}
                 onChange={handleChange}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3d6b35]"
-                required
               />
               <input
                 type="number"
@@ -363,27 +394,43 @@ export default function ProductFormModal({
             </div>
           </div>
 
-          {/* Product Images — Cloudinary */}
+          {/* Product Images */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <ImageIcon size={16} className="text-[#3d6b35]" />
               <h3 className="font-semibold text-gray-700">Product Images</h3>
-              <span className="text-xs text-gray-400 ml-1">
-                (uploaded to Cloudinary)
-              </span>
+              <span className="text-xs text-gray-400 ml-1">(Cloudinary)</span>
             </div>
             <p className="text-xs text-gray-500">
-              Upload image files or paste direct URLs. First image is the main
-              product photo.
+              <strong>Upload files</strong> (recommended) — avoids hotlinking issues with Pinterest/Unsplash.
+              First image is the main product photo.
             </p>
 
             {images.map((img, idx) => (
-              <div key={idx} className="border border-gray-200 rounded-xl p-3 space-y-2">
+              <div
+                key={idx}
+                className={`border rounded-xl p-3 space-y-2 ${
+                  img.isPinterest
+                    ? "border-amber-300 bg-amber-50"
+                    : "border-gray-200"
+                }`}
+              >
+                {img.isPinterest && (
+                  <p className="text-xs font-semibold text-amber-700 flex items-center gap-1">
+                    <AlertTriangle size={12} />
+                    Pinterest URL — please upload this image instead
+                  </p>
+                )}
+
                 {/* Mode toggle */}
                 <div className="flex gap-2 text-xs">
                   <button
                     type="button"
-                    onClick={() => toggleMode(idx)}
+                    onClick={() =>
+                      setInputMode((prev) =>
+                        prev.map((m, i) => (i === idx ? "file" : m))
+                      )
+                    }
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition ${
                       inputMode[idx] === "file"
                         ? "bg-[#3d6b35] text-white border-[#3d6b35]"
@@ -395,7 +442,11 @@ export default function ProductFormModal({
                   </button>
                   <button
                     type="button"
-                    onClick={() => toggleMode(idx)}
+                    onClick={() =>
+                      setInputMode((prev) =>
+                        prev.map((m, i) => (i === idx ? "url" : m))
+                      )
+                    }
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition ${
                       inputMode[idx] === "url"
                         ? "bg-[#3d6b35] text-white border-[#3d6b35]"
@@ -414,9 +465,7 @@ export default function ProductFormModal({
                         <input
                           type="file"
                           accept="image/*"
-                          ref={(el) => {
-                            fileInputRefs.current[idx] = el;
-                          }}
+                          ref={(el) => { fileInputRefs.current[idx] = el; }}
                           onChange={(e) => handleFileChange(idx, e)}
                           className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-[#eef5ea] file:text-[#3d6b35] file:font-semibold hover:file:bg-[#3d6b35] hover:file:text-white file:transition-colors cursor-pointer"
                         />
@@ -467,6 +516,11 @@ export default function ProductFormModal({
                     {idx === 0 && (
                       <span className="absolute top-0.5 left-0.5 bg-[#3d6b35] text-white text-[8px] font-bold px-1 py-0.5 rounded">
                         Main
+                      </span>
+                    )}
+                    {img.isPinterest && (
+                      <span className="absolute bottom-0.5 right-0.5 bg-amber-500 text-white text-[7px] font-bold px-1 py-0.5 rounded">
+                        ⚠️
                       </span>
                     )}
                   </div>

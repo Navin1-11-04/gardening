@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Package, ShoppingCart, Users, TrendingUp,
+  Package, ShoppingCart, TrendingUp,
   AlertTriangle, ArrowRight, Leaf, Clock,
   CheckCircle2, XCircle, Truck, RefreshCw,
   MessageSquare, IndianRupee, Calendar,
@@ -20,16 +20,16 @@ interface LiveData {
 }
 
 interface Stats {
-  totalProducts: number;
-  totalOrders: number;
-  totalRevenue: number;
+  totalProducts:   number;
+  totalOrders:     number;
+  totalRevenue:    number;
   pipelineRevenue: number;
-  pipelineOrders: number;
-  monthRevenue: number;
-  totalCustomers: number;
-  lowStockProducts: number;
+  pipelineOrders:  number;
+  monthRevenue:    number;
+  totalCustomers:  number;
+  lowStockProducts:number;
   statusBreakdown: Record<string, number>;
-  todayOrders: number;
+  todayOrders:     number;
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
@@ -44,7 +44,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return "just now";
+  if (m < 1)  return "just now";
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
@@ -52,19 +52,21 @@ function timeAgo(dateStr: string) {
 }
 
 function formatINR(val: number) {
-  if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
-  if (val >= 1000) return `₹${Math.round(val / 1000)}K`;
-  return `₹${Math.round(val)}`;
+  if (val >= 100000) return `Rs.${(val / 100000).toFixed(1)}L`;
+  if (val >= 1000)   return `Rs.${Math.round(val / 1000)}K`;
+  return `Rs.${Math.round(val)}`;
 }
 
 export default function AdminDashboard() {
-  const [stats,   setStats]   = useState<Stats | null>(null);
-  const [live,    setLive]    = useState<LiveData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [stats,       setStats]       = useState<Stats | null>(null);
+  const [live,        setLive]        = useState<LiveData | null>(null);
+  const [loading,     setLoading]     = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [error,       setError]       = useState("");
 
   const fetchAll = async () => {
     setLoading(true);
+    setError("");
     try {
       const [statsRes, liveRes] = await Promise.all([
         fetch("/api/admin/dashboard/stats"),
@@ -73,8 +75,8 @@ export default function AdminDashboard() {
       if (statsRes.ok) setStats(await statsRes.json());
       if (liveRes.ok)  setLive(await liveRes.json());
       setLastUpdated(new Date());
-    } catch (e) {
-      console.error("Dashboard fetch error:", e);
+    } catch {
+      setError("Could not load dashboard data. Check your database connection.");
     } finally {
       setLoading(false);
     }
@@ -82,49 +84,51 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchAll();
+    // Auto-refresh every 2 minutes
     const id = setInterval(fetchAll, 120_000);
     return () => clearInterval(id);
   }, []);
 
   const statCards = [
     {
-      label: "Pipeline Revenue",
-      href: "/admin/orders",
-      value: loading ? "—" : formatINR(stats?.pipelineRevenue ?? 0),
-      icon: IndianRupee,
-      color: "bg-[#eef7e6] text-[#3d6b35]",
+      label:   "Pipeline Revenue",
+      href:    "/admin/orders",
+      value:   loading ? "—" : formatINR(stats?.pipelineRevenue ?? 0),
+      icon:    IndianRupee,
+      color:   "bg-[#eef7e6] text-[#3d6b35]",
       subtext: `${stats?.pipelineOrders ?? 0} active orders`,
-      tooltip: "All confirmed/processing/shipped orders",
     },
     {
-      label: "Delivered Revenue",
-      href: "/admin/analytics",
-      value: loading ? "—" : formatINR(stats?.totalRevenue ?? 0),
-      icon: TrendingUp,
-      color: "bg-amber-50 text-amber-600",
-      subtext: "Collected so far",
-      tooltip: "Revenue from delivered orders only",
+      label:   "Collected Revenue",
+      href:    "/admin/analytics",
+      value:   loading ? "—" : formatINR(stats?.totalRevenue ?? 0),
+      icon:    TrendingUp,
+      color:   "bg-amber-50 text-amber-600",
+      subtext: "Delivered orders only",
     },
     {
-      label: "Total Orders",
-      href: "/admin/orders",
-      value: loading ? "—" : (stats?.totalOrders ?? 0),
-      icon: ShoppingCart,
-      color: "bg-blue-50 text-blue-600",
+      label:   "Total Orders",
+      href:    "/admin/orders",
+      value:   loading ? "—" : (stats?.totalOrders ?? 0),
+      icon:    ShoppingCart,
+      color:   "bg-blue-50 text-blue-600",
       subtext: `${stats?.todayOrders ?? 0} today`,
     },
     {
-      label: "Low Stock",
-      href: "/admin/products",
-      value: loading ? "—" : (stats?.lowStockProducts ?? 0),
-      icon: Package,
-      color: (stats?.lowStockProducts ?? 0) > 0 ? "bg-red-50 text-red-600" : "bg-[#eef7e6] text-[#3d6b35]",
+      label:   "Low Stock",
+      href:    "/admin/products",
+      value:   loading ? "—" : (stats?.lowStockProducts ?? 0),
+      icon:    Package,
+      color:   (stats?.lowStockProducts ?? 0) > 0
+        ? "bg-red-50 text-red-600"
+        : "bg-[#eef7e6] text-[#3d6b35]",
       subtext: "Products need restock",
     },
   ];
 
   return (
     <div className="space-y-6 max-w-7xl">
+
       {/* Welcome banner */}
       <div className="bg-gradient-to-r from-[#1e3d18] to-[#2d5a25] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -133,7 +137,7 @@ export default function AdminDashboard() {
             <p className="text-[#7ab648] text-xs font-bold uppercase tracking-wider">Live Dashboard</p>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
-            Welcome back, Admin 👋
+            Welcome back, Admin
           </h2>
           {lastUpdated && (
             <p className="text-[#9ac880] text-xs mt-1">
@@ -167,12 +171,27 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-700 flex items-center gap-2">
+          <AlertTriangle size={16} className="shrink-0" />
+          {error}
+          <button onClick={fetchAll} className="ml-auto underline font-semibold">Retry</button>
+        </div>
+      )}
+
       {/* This month highlight */}
       {!loading && (stats?.monthRevenue ?? 0) > 0 && (
         <div className="bg-[#eef7e6] border border-[#b8d4a0] rounded-2xl px-5 py-4 flex items-center gap-3">
           <Calendar size={18} className="text-[#3d6b35] shrink-0" />
           <p className="text-sm text-[#1e3d18]">
-            <span className="font-bold">This month so far:</span> {formatINR(stats?.monthRevenue ?? 0)} across {(stats?.statusBreakdown?.confirmed ?? 0) + (stats?.statusBreakdown?.processing ?? 0) + (stats?.statusBreakdown?.shipped ?? 0) + (stats?.statusBreakdown?.delivered ?? 0)} orders
+            <span className="font-bold">This month so far:</span>{" "}
+            {formatINR(stats?.monthRevenue ?? 0)} across{" "}
+            {(stats?.statusBreakdown?.confirmed ?? 0) +
+              (stats?.statusBreakdown?.processing ?? 0) +
+              (stats?.statusBreakdown?.shipped ?? 0) +
+              (stats?.statusBreakdown?.delivered ?? 0)}{" "}
+            orders
           </p>
         </div>
       )}
@@ -184,18 +203,18 @@ export default function AdminDashboard() {
           <p className="text-sm text-amber-800">
             <span className="font-bold">{stats?.lowStockProducts} product{(stats?.lowStockProducts ?? 0) !== 1 ? "s" : ""}</span>{" "}
             running low on stock.{" "}
-            <Link href="/admin/products" className="underline font-semibold">Review now →</Link>
+            <Link href="/admin/products" className="underline font-semibold">Review now</Link>
           </p>
         </div>
       )}
 
-      {/* Stats grid */}
+      {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
             <Link key={card.label} href={card.href} className="group">
-              <div className="bg-white rounded-2xl p-5 border border-[#dce8d4] hover:border-[#7ab648] hover:shadow-lg hover:shadow-[#7ab648]/10 transition-all duration-200">
+              <div className="bg-white rounded-2xl p-5 border border-[#dce8d4] hover:border-[#7ab648] hover:shadow-lg transition-all duration-200">
                 <div className="flex items-start justify-between mb-4">
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${card.color}`}>
                     <Icon size={20} />
@@ -215,7 +234,7 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      {/* Order status pills */}
+      {/* Status pills */}
       {live?.statusBreakdown && Object.keys(live.statusBreakdown).length > 0 && (
         <div className="flex flex-wrap gap-3">
           {Object.entries(live.statusBreakdown).map(([status, count]) => {
@@ -232,8 +251,9 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Two-column layout */}
+      {/* Two-column: recent orders + top products */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
         {/* Recent orders */}
         <div className="lg:col-span-3 bg-white rounded-2xl border border-[#dce8d4] overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f4ed]">
@@ -248,7 +268,9 @@ export default function AdminDashboard() {
               <p className="text-xs text-[#9ab890]">Loading orders…</p>
             </div>
           ) : !live?.orders?.length ? (
-            <div className="p-8 text-center text-sm text-[#9ab890]">No orders yet.</div>
+            <div className="p-8 text-center text-sm text-[#9ab890]">
+              No orders yet. Once customers place orders they will appear here.
+            </div>
           ) : (
             <div className="divide-y divide-[#f5f8f2]">
               {live.orders.map((order) => {
@@ -260,7 +282,9 @@ export default function AdminDashboard() {
                       <p className="text-sm font-bold text-[#1e3d18] truncate">{order.orderNumber}</p>
                       <p className="text-xs text-[#7a9e6a] truncate">{order.customer} · {timeAgo(order.time)}</p>
                     </div>
-                    <p className="text-sm font-black text-[#3d6b35] shrink-0">₹{order.amount.toLocaleString("en-IN")}</p>
+                    <p className="text-sm font-black text-[#3d6b35] shrink-0">
+                      {formatINR(order.amount)}
+                    </p>
                     <span className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 ${s.color}`}>
                       <SIcon size={10} />{s.label}
                     </span>
@@ -275,8 +299,8 @@ export default function AdminDashboard() {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-[#dce8d4] overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f4ed]">
             <h3 className="text-base font-bold text-[#1e3d18]">Top Products</h3>
-            <Link href="/admin/products" className="text-xs font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
-              View all <ArrowRight size={12} />
+            <Link href="/admin/analytics" className="text-xs font-semibold text-[#3d6b35] hover:underline flex items-center gap-1">
+              Analytics <ArrowRight size={12} />
             </Link>
           </div>
           {loading ? (
@@ -284,7 +308,9 @@ export default function AdminDashboard() {
               <RefreshCw size={18} className="animate-spin text-[#3d6b35] mx-auto mb-2" />
             </div>
           ) : !live?.topProducts?.length ? (
-            <div className="p-6 text-center text-sm text-[#9ab890]">No sales data yet.</div>
+            <div className="p-6 text-center text-sm text-[#9ab890]">
+              No sales data yet. Products will appear here after orders are placed.
+            </div>
           ) : (
             <div className="p-4 space-y-3">
               {live.topProducts.map((p, i) => (
@@ -294,9 +320,21 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-[#1e3d18] truncate">{p.name}</p>
-                    <p className="text-xs text-[#7a9e6a]">{p.sales} sold</p>
+                    <div className="h-1.5 bg-[#f0f4ed] rounded-full mt-1.5 overflow-hidden">
+                      <div
+                        className="h-full bg-[#3d6b35] rounded-full"
+                        style={{
+                          width: `${live.topProducts[0].sales > 0
+                            ? Math.round((p.sales / live.topProducts[0].sales) * 100)
+                            : 0}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-                  <p className="text-sm font-black text-[#3d6b35] shrink-0">{formatINR(p.revenue)}</p>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-black text-[#3d6b35]">{formatINR(p.revenue)}</p>
+                    <p className="text-xs text-[#9ab890]">{p.sales} sold</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -304,7 +342,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Low stock items table */}
+      {/* Low stock items */}
       {live?.lowStock && live.lowStock.length > 0 && (
         <div className="bg-white rounded-2xl border border-[#dce8d4] overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#f0f4ed]">
@@ -312,7 +350,9 @@ export default function AdminDashboard() {
               <AlertTriangle size={16} className="text-amber-500" />
               <h3 className="text-base font-bold text-[#1e3d18]">Low Stock Items</h3>
             </div>
-            <Link href="/admin/products" className="text-xs font-semibold text-[#3d6b35] hover:underline">Update stock →</Link>
+            <Link href="/admin/products" className="text-xs font-semibold text-[#3d6b35] hover:underline">
+              Update stock
+            </Link>
           </div>
           <div className="divide-y divide-[#f5f8f2]">
             {live.lowStock.map((item) => (
@@ -321,7 +361,11 @@ export default function AdminDashboard() {
                   <p className="text-sm font-bold text-[#1e3d18] truncate">{item.name}</p>
                   <p className="text-xs text-[#9ab890] font-mono">{item.sku}</p>
                 </div>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${item.stock === 0 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                  item.stock === 0
+                    ? "bg-red-100 text-red-700"
+                    : "bg-amber-100 text-amber-700"
+                }`}>
                   {item.stock === 0 ? "Out of stock" : `${item.stock} left`}
                 </span>
               </div>
@@ -333,13 +377,15 @@ export default function AdminDashboard() {
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { title: "Add New Product",    desc: "Seeds, pots, fertilizers & more", icon: Package,      href: "/admin/products",   color: "bg-[#eef7e6] border-[#c8e8b0]", iconColor: "bg-[#3d6b35] text-white" },
-          { title: "Manage Orders",      desc: "Process & track deliveries",       icon: ShoppingCart, href: "/admin/orders",     color: "bg-blue-50 border-blue-200",    iconColor: "bg-blue-600 text-white" },
-          { title: "Customer Messages",  desc: "View contact form inquiries",      icon: MessageSquare,href: "/admin/inquiries",  color: "bg-purple-50 border-purple-200",iconColor: "bg-purple-600 text-white" },
+          { title: "Add New Product",   desc: "Seeds, pots, fertilizers",  icon: Package,      href: "/admin/products",  color: "bg-[#eef7e6] border-[#c8e8b0]", iconColor: "bg-[#3d6b35] text-white" },
+          { title: "Manage Orders",     desc: "Process and track orders",  icon: ShoppingCart, href: "/admin/orders",    color: "bg-blue-50 border-blue-200",    iconColor: "bg-blue-600 text-white" },
+          { title: "Customer Messages", desc: "View contact inquiries",    icon: MessageSquare,href: "/admin/inquiries", color: "bg-purple-50 border-purple-200",iconColor: "bg-purple-600 text-white" },
         ].map((action) => {
           const Icon = action.icon;
           return (
-            <Link key={action.title} href={action.href}
+            <Link
+              key={action.title}
+              href={action.href}
               className={`flex items-center gap-4 p-4 rounded-2xl border-2 hover:shadow-md transition-all group ${action.color}`}
             >
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${action.iconColor}`}>
