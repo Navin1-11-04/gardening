@@ -28,8 +28,8 @@ interface CartContextValue {
   totalItems: number;
   subtotal: number;
   addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
-  removeItem: (id: number) => void;
-  updateQuantity: (id: number, qty: number) => void;
+  removeItem: (id: number, variant?: string) => void;
+  updateQuantity: (id: number, qty: number, variant?: string) => void;
   clearCart: () => void;
   isInCart: (id: number) => boolean;
   getQuantity: (id: number) => number;
@@ -44,7 +44,7 @@ const STORAGE_KEY = "kavin_cart";
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items,    setItems]    = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   // Load from localStorage on mount
@@ -71,10 +71,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items, hydrated]);
 
+  // ── addItem ─────────────────────────────────────────────────────────────────
   const addItem = useCallback(
     (newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
       setItems((prev) => {
-        const existing = prev.find((i) => i.id === newItem.id && i.variant === newItem.variant);
+        const existing = prev.find(
+          (i) => i.id === newItem.id && i.variant === newItem.variant
+        );
         if (existing) {
           return prev.map((i) =>
             i.id === newItem.id && i.variant === newItem.variant
@@ -88,16 +91,49 @@ export function CartProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const removeItem = useCallback((id: number) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  }, []);
-
-  const updateQuantity = useCallback((id: number, qty: number) => {
-    if (qty < 1) return;
+  // ── removeItem ──────────────────────────────────────────────────────────────
+  // FIX: now matches by both id AND variant so mixed variants work correctly
+  const removeItem = useCallback((id: number, variant?: string) => {
     setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i))
+      prev.filter((i) => {
+        if (variant !== undefined) {
+          return !(i.id === id && i.variant === variant);
+        }
+        return i.id !== id;
+      })
     );
   }, []);
+
+  // ── updateQuantity ──────────────────────────────────────────────────────────
+  // FIX: qty < 1 now REMOVES the item instead of doing nothing.
+  // This fixes the cart bug where pressing minus at qty=1 did nothing.
+  const updateQuantity = useCallback(
+    (id: number, qty: number, variant?: string) => {
+      if (qty < 1) {
+        // Remove the item when quantity goes below 1
+        setItems((prev) =>
+          prev.filter((i) => {
+            if (variant !== undefined) {
+              return !(i.id === id && i.variant === variant);
+            }
+            return i.id !== id;
+          })
+        );
+        return;
+      }
+      setItems((prev) =>
+        prev.map((i) => {
+          if (variant !== undefined) {
+            return i.id === id && i.variant === variant
+              ? { ...i, quantity: qty }
+              : i;
+          }
+          return i.id === id ? { ...i, quantity: qty } : i;
+        })
+      );
+    },
+    []
+  );
 
   const clearCart = useCallback(() => setItems([]), []);
 
@@ -112,7 +148,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const subtotal   = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   return (
     <CartContext.Provider
