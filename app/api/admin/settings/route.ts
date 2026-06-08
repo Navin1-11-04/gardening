@@ -1,7 +1,9 @@
+// app/api/admin/settings/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
 import { requireAdminAuth } from "@/lib/adminAuthServer";
+import { verifyCsrf } from "@/lib/csrf";
 
 const DEFAULTS = {
   storeName:             "Kavin Organics",
@@ -39,6 +41,10 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   const auth = await requireAdminAuth();
   if (!auth.ok) return auth.response;
+
+  const csrf = await verifyCsrf(request);
+  if (!csrf.ok) return csrf.response;
+
   try {
     await connectDB();
     const data   = await request.json();
@@ -49,7 +55,6 @@ export async function PUT(request: NextRequest) {
       { upsert: true, new: true }
     );
     const response = NextResponse.json({ message: "Settings saved successfully" });
-    // Cookie lets middleware check maintenance mode without a DB call
     response.cookies.set("maintenance_mode", String(!!merged.maintenanceMode), {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",

@@ -4,9 +4,8 @@ import { useState, useEffect } from "react";
 import {
   Save, RefreshCw, Check, AlertCircle, ChevronDown, ChevronUp,
   Plus, Trash2, Home, Info, HelpCircle, Truck, RotateCcw, Phone,
+  WifiOff,
 } from "lucide-react";
-
-// ─── Page definitions ─────────────────────────────────────────────────────────
 
 const PAGES = [
   { key: "homepage", label: "Homepage",        icon: Home,       desc: "Slider slides, announcement bar" },
@@ -52,16 +51,14 @@ const Section = ({ title, children, defaultOpen = true }: { title: string; child
   );
 };
 
-// ─── Homepage editor ──────────────────────────────────────────────────────────
+// ─── Sub-editors (unchanged from original) ────────────────────────────────────
 
 const HomepageEditor = ({ value, onChange }: { value: any; onChange: (v: any) => void }) => {
   const slides = value?.sliderItems ?? [];
-
   const updateSlide = (i: number, field: string, v: string) => {
     const updated = slides.map((s: any, idx: number) => idx === i ? { ...s, [field]: v } : s);
     onChange({ ...value, sliderItems: updated });
   };
-
   const addSlide = () => onChange({ ...value, sliderItems: [...slides, { imgUrl: "", tag: "", title: "", subtitle: "", ctaText: "Shop Now", ctaHref: "/shop" }] });
   const removeSlide = (i: number) => onChange({ ...value, sliderItems: slides.filter((_: any, idx: number) => idx !== i) });
 
@@ -70,7 +67,6 @@ const HomepageEditor = ({ value, onChange }: { value: any; onChange: (v: any) =>
       <Section title="Announcement Bar">
         <Input label="Announcement text" value={value?.announcementBar ?? ""} onChange={(v) => onChange({ ...value, announcementBar: v })} placeholder="Free delivery on orders above ₹999 | Call us: +91 98765 43210" />
       </Section>
-
       <Section title="Slider Slides">
         {slides.map((slide: any, i: number) => (
           <div key={i} className="border border-[#dce8d4] rounded-xl p-4 space-y-3">
@@ -83,7 +79,7 @@ const HomepageEditor = ({ value, onChange }: { value: any; onChange: (v: any) =>
             <Input label="Image URL" value={slide.imgUrl} onChange={(v) => updateSlide(i, "imgUrl", v)} placeholder="https://images.unsplash.com/..." />
             {slide.imgUrl && <img src={slide.imgUrl} alt="" className="w-full h-24 object-cover rounded-lg border border-[#dce8d4]" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />}
             <div className="grid grid-cols-2 gap-3">
-              <Input label="Tag pill (e.g. Premium Seeds)" value={slide.tag} onChange={(v) => updateSlide(i, "tag", v)} />
+              <Input label="Tag pill" value={slide.tag} onChange={(v) => updateSlide(i, "tag", v)} />
               <Input label="CTA button text" value={slide.ctaText} onChange={(v) => updateSlide(i, "ctaText", v)} placeholder="Shop Seeds" />
             </div>
             <Input label="Headline" value={slide.title} onChange={(v) => updateSlide(i, "title", v)} placeholder="Grow healthy plants from the finest seeds." />
@@ -101,34 +97,28 @@ const HomepageEditor = ({ value, onChange }: { value: any; onChange: (v: any) =>
   );
 };
 
-// ─── About editor ─────────────────────────────────────────────────────────────
-
 const AboutEditor = ({ value, onChange }: { value: any; onChange: (v: any) => void }) => {
   const stats   = value?.stats ?? [];
   const team    = value?.teamMembers ?? [];
   const reviews = value?.reviews ?? [];
   const paras   = value?.storyParagraphs ?? [];
-
   return (
     <div className="space-y-4">
       <Section title="Hero">
         <Input label="Hero title" value={value?.heroTitle ?? ""} onChange={(v) => onChange({ ...value, heroTitle: v })} />
         <Input label="Hero subtitle" value={value?.heroSubtitle ?? ""} onChange={(v) => onChange({ ...value, heroSubtitle: v })} multiline />
       </Section>
-
       <Section title="Our Story paragraphs">
         {paras.map((p: string, i: number) => (
           <div key={i} className="flex gap-2">
-            <textarea value={p} rows={2} onChange={(e) => { const updated = paras.map((x: string, idx: number) => idx === i ? e.target.value : x); onChange({ ...value, storyParagraphs: updated }); }}
-              className="flex-1 px-3 py-2.5 border border-[#dce8d4] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#3d6b35] bg-white resize-none"
-            />
+            <textarea value={p} rows={2} onChange={(e) => { const u = paras.map((x: string, idx: number) => idx === i ? e.target.value : x); onChange({ ...value, storyParagraphs: u }); }}
+              className="flex-1 px-3 py-2.5 border border-[#dce8d4] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#3d6b35] bg-white resize-none" />
             <button onClick={() => onChange({ ...value, storyParagraphs: paras.filter((_: string, idx: number) => idx !== i) })} className="p-2 hover:bg-red-50 text-red-400 rounded-lg shrink-0"><Trash2 size={13} /></button>
           </div>
         ))}
         <button onClick={() => onChange({ ...value, storyParagraphs: [...paras, ""] })} className="flex items-center gap-2 px-3 py-2 text-sm text-[#3d6b35] hover:bg-[#eef5ea] rounded-xl transition-colors"><Plus size={14} />Add paragraph</button>
       </Section>
-
-      <Section title="Stats bar (4 numbers)">
+      <Section title="Stats bar (4 numbers)" defaultOpen={false}>
         <div className="grid grid-cols-2 gap-3">
           {stats.map((s: any, i: number) => (
             <div key={i} className="border border-[#dce8d4] rounded-xl p-3 space-y-2">
@@ -138,8 +128,7 @@ const AboutEditor = ({ value, onChange }: { value: any; onChange: (v: any) => vo
           ))}
         </div>
       </Section>
-
-      <Section title="Team members">
+      <Section title="Team members" defaultOpen={false}>
         {team.map((m: any, i: number) => (
           <div key={i} className="border border-[#dce8d4] rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -156,8 +145,7 @@ const AboutEditor = ({ value, onChange }: { value: any; onChange: (v: any) => vo
         ))}
         <button onClick={() => onChange({ ...value, teamMembers: [...team, { name: "", role: "", bio: "", image: "" }] })} className="flex items-center gap-2 px-3 py-2 text-sm text-[#3d6b35] hover:bg-[#eef5ea] rounded-xl transition-colors"><Plus size={14} />Add team member</button>
       </Section>
-
-      <Section title="Customer reviews">
+      <Section title="Customer reviews" defaultOpen={false}>
         {reviews.map((r: any, i: number) => (
           <div key={i} className="border border-[#dce8d4] rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -183,20 +171,15 @@ const AboutEditor = ({ value, onChange }: { value: any; onChange: (v: any) => vo
   );
 };
 
-// ─── FAQ editor ───────────────────────────────────────────────────────────────
-
 const FaqEditor = ({ value, onChange }: { value: any; onChange: (v: any) => void }) => {
   const groups = value?.groups ?? [];
-
   const updateGroup = (gi: number, field: string, v: any) => {
     onChange({ ...value, groups: groups.map((g: any, i: number) => i === gi ? { ...g, [field]: v } : g) });
   };
-
   const updateFaq = (gi: number, fi: number, field: string, v: string) => {
     const newFaqs = groups[gi].faqs.map((f: any, i: number) => i === fi ? { ...f, [field]: v } : f);
     updateGroup(gi, "faqs", newFaqs);
   };
-
   return (
     <div className="space-y-4">
       {groups.map((group: any, gi: number) => (
@@ -220,8 +203,6 @@ const FaqEditor = ({ value, onChange }: { value: any; onChange: (v: any) => void
   );
 };
 
-// ─── Shipping editor ──────────────────────────────────────────────────────────
-
 const ShippingEditor = ({ value, onChange }: { value: any; onChange: (v: any) => void }) => {
   const zones = value?.deliveryZones ?? [];
   return (
@@ -242,7 +223,7 @@ const ShippingEditor = ({ value, onChange }: { value: any; onChange: (v: any) =>
         ))}
         <button onClick={() => onChange({ ...value, deliveryZones: [...zones, { zone: "", time: "", fee: "" }] })} className="flex items-center gap-2 px-3 py-2 text-sm text-[#3d6b35] hover:bg-[#eef5ea] rounded-xl transition-colors"><Plus size={14} />Add zone</button>
       </Section>
-      <Section title="Other">
+      <Section title="Other" defaultOpen={false}>
         <Input label="Packaging note" value={value?.packagingNote ?? ""} onChange={(v) => onChange({ ...value, packagingNote: v })} multiline />
         <Input label="Business days" value={value?.businessDays ?? ""} onChange={(v) => onChange({ ...value, businessDays: v })} />
       </Section>
@@ -250,12 +231,9 @@ const ShippingEditor = ({ value, onChange }: { value: any; onChange: (v: any) =>
   );
 };
 
-// ─── Returns editor ───────────────────────────────────────────────────────────
-
 const ReturnsEditor = ({ value, onChange }: { value: any; onChange: (v: any) => void }) => {
   const eligible    = value?.eligible ?? [];
   const notEligible = value?.notEligible ?? [];
-
   return (
     <div className="space-y-4">
       <Section title="Policy terms">
@@ -268,8 +246,7 @@ const ReturnsEditor = ({ value, onChange }: { value: any; onChange: (v: any) => 
         {eligible.map((item: string, i: number) => (
           <div key={i} className="flex gap-2">
             <input value={item} onChange={(e) => { const u = eligible.map((x: string, idx: number) => idx === i ? e.target.value : x); onChange({ ...value, eligible: u }); }}
-              className="flex-1 px-3 py-2 border border-[#dce8d4] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#3d6b35] bg-white"
-            />
+              className="flex-1 px-3 py-2 border border-[#dce8d4] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#3d6b35] bg-white" />
             <button onClick={() => onChange({ ...value, eligible: eligible.filter((_: string, idx: number) => idx !== i) })} className="p-2 hover:bg-red-50 text-red-400 rounded-lg"><Trash2 size={13} /></button>
           </div>
         ))}
@@ -279,8 +256,7 @@ const ReturnsEditor = ({ value, onChange }: { value: any; onChange: (v: any) => 
         {notEligible.map((item: string, i: number) => (
           <div key={i} className="flex gap-2">
             <input value={item} onChange={(e) => { const u = notEligible.map((x: string, idx: number) => idx === i ? e.target.value : x); onChange({ ...value, notEligible: u }); }}
-              className="flex-1 px-3 py-2 border border-[#dce8d4] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#3d6b35] bg-white"
-            />
+              className="flex-1 px-3 py-2 border border-[#dce8d4] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#3d6b35] bg-white" />
             <button onClick={() => onChange({ ...value, notEligible: notEligible.filter((_: string, idx: number) => idx !== i) })} className="p-2 hover:bg-red-50 text-red-400 rounded-lg"><Trash2 size={13} /></button>
           </div>
         ))}
@@ -290,23 +266,21 @@ const ReturnsEditor = ({ value, onChange }: { value: any; onChange: (v: any) => 
   );
 };
 
-// ─── Contact editor ───────────────────────────────────────────────────────────
-
 const ContactEditor = ({ value, onChange }: { value: any; onChange: (v: any) => void }) => (
   <div className="space-y-4">
     <Section title="Contact details">
       <div className="grid grid-cols-2 gap-3">
         <Input label="Phone number" value={value?.phone ?? ""} onChange={(v) => onChange({ ...value, phone: v })} placeholder="+91 98765 43210" />
-        <Input label="WhatsApp number (no + or spaces)" value={value?.whatsapp ?? ""} onChange={(v) => onChange({ ...value, whatsapp: v })} placeholder="919876543210" />
+        <Input label="WhatsApp number" value={value?.whatsapp ?? ""} onChange={(v) => onChange({ ...value, whatsapp: v })} placeholder="919876543210" />
       </div>
       <Input label="Email address" value={value?.email ?? ""} onChange={(v) => onChange({ ...value, email: v })} />
       <Input label="Store address" value={value?.address ?? ""} onChange={(v) => onChange({ ...value, address: v })} multiline />
     </Section>
     <Section title="Business hours">
       <div className="grid grid-cols-2 gap-3">
-        <Input label="Weekdays open" value={value?.hours?.weekdays?.open ?? "9:00 AM"} onChange={(v) => onChange({ ...value, hours: { ...value?.hours, weekdays: { ...value?.hours?.weekdays, open: v } } })} />
+        <Input label="Weekdays open"  value={value?.hours?.weekdays?.open  ?? "9:00 AM"} onChange={(v) => onChange({ ...value, hours: { ...value?.hours, weekdays: { ...value?.hours?.weekdays, open: v } } })} />
         <Input label="Weekdays close" value={value?.hours?.weekdays?.close ?? "6:00 PM"} onChange={(v) => onChange({ ...value, hours: { ...value?.hours, weekdays: { ...value?.hours?.weekdays, close: v } } })} />
-        <Input label="Saturday open" value={value?.hours?.saturday?.open ?? "9:00 AM"} onChange={(v) => onChange({ ...value, hours: { ...value?.hours, saturday: { ...value?.hours?.saturday, open: v } } })} />
+        <Input label="Saturday open"  value={value?.hours?.saturday?.open  ?? "9:00 AM"} onChange={(v) => onChange({ ...value, hours: { ...value?.hours, saturday: { ...value?.hours?.saturday, open: v } } })} />
         <Input label="Saturday close" value={value?.hours?.saturday?.close ?? "4:00 PM"} onChange={(v) => onChange({ ...value, hours: { ...value?.hours, saturday: { ...value?.hours?.saturday, close: v } } })} />
       </div>
     </Section>
@@ -316,24 +290,28 @@ const ContactEditor = ({ value, onChange }: { value: any; onChange: (v: any) => 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function AdminContentPage() {
-  const [activeKey, setActiveKey]   = useState("homepage");
-  const [content,   setContent]     = useState<any>(null);
-  const [loading,   setLoading]     = useState(false);
-  const [saving,    setSaving]      = useState(false);
-  const [saved,     setSaved]       = useState(false);
-  const [error,     setError]       = useState("");
+  const [activeKey, setActiveKey] = useState("homepage");
+  const [content,   setContent]   = useState<any>(null);
+  const [loading,   setLoading]   = useState(false);
+  const [saving,    setSaving]    = useState(false);
+  const [saved,     setSaved]     = useState(false);
+  const [error,     setError]     = useState("");
+  const [dbWarning, setDbWarning] = useState(false); // true = loaded from defaults, not DB
 
   useEffect(() => { loadContent(activeKey); }, [activeKey]);
 
   const loadContent = async (key: string) => {
     setLoading(true);
     setError("");
+    setDbWarning(false);
     setContent(null);
     try {
       const res = await fetch(`/api/admin/content/${key}`);
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("Failed to load");
       const data = await res.json();
       setContent(data.value ?? data);
+      // If updatedAt is null, content came from defaults (never saved to DB)
+      setDbWarning(data.updatedAt === null);
     } catch {
       setError("Could not load content. Check your database connection.");
     } finally {
@@ -350,8 +328,13 @@ export default function AdminContentPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ value: content }),
       });
-      if (!res.ok) { const d = await res.json(); setError(d.error ?? "Save failed."); return; }
+      if (!res.ok) {
+        const d = await res.json();
+        setError(d.error ?? "Save failed.");
+        return;
+      }
       setSaved(true);
+      setDbWarning(false);
       setTimeout(() => setSaved(false), 3000);
     } catch {
       setError("Network error. Please try again.");
@@ -377,14 +360,26 @@ export default function AdminContentPage() {
         </button>
       </div>
 
+      {/* DB warning — content loaded from defaults, not yet in DB */}
+      {dbWarning && !error && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 text-sm text-amber-800">
+          <WifiOff size={16} className="shrink-0 mt-0.5 text-amber-600" />
+          <div>
+            <p className="font-bold">Showing default content</p>
+            <p className="text-xs mt-0.5">This page hasn't been customised yet — you're seeing the built-in defaults. Edit anything and hit <strong>Save Changes</strong> to store it in your database.</p>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-700">
           <AlertCircle size={15} className="shrink-0" />{error}
+          <button onClick={() => loadContent(activeKey)} className="ml-auto underline font-semibold">Retry</button>
         </div>
       )}
 
       <div className="flex gap-5 items-start">
-        {/* Page selector sidebar */}
+        {/* Page selector */}
         <div className="w-48 shrink-0">
           <p className="text-xs font-bold text-[#7a9e6a] uppercase tracking-wider mb-2">Select page</p>
           <div className="flex flex-col gap-1">
@@ -429,7 +424,10 @@ export default function AdminContentPage() {
             </div>
           ) : !content ? (
             <div className="bg-white rounded-2xl border border-[#dce8d4] p-10 text-center">
-              <p className="text-sm text-[#9ab890]">No content loaded.</p>
+              <p className="text-sm text-[#9ab890]">No content loaded. Try refreshing.</p>
+              <button onClick={() => loadContent(activeKey)} className="mt-3 text-sm font-bold text-[#3d6b35] hover:underline">
+                Retry
+              </button>
             </div>
           ) : (
             <div>

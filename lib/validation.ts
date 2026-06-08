@@ -1,3 +1,6 @@
+// lib/validation.ts
+import { isTamilNaduPincode } from "./tamilnaduPincodes";
+
 export interface ValidationError {
   field: string;
   message: string;
@@ -43,7 +46,7 @@ export function isPositiveNumber(val: unknown): val is number {
 
 export function sanitize(val: unknown): string {
   if (typeof val !== "string") return "";
-  return val.trim().slice(0, 2000); // never store unbounded user text
+  return val.trim().slice(0, 2000);
 }
 
 // ── Domain validators ────────────────────────────────────────────────────────
@@ -67,8 +70,18 @@ export function validateCheckoutAddress(address: Record<string, unknown>) {
   if (!isNonEmptyString(address.state))
     v.add("state", "State is required.");
 
-  if (!isValidPincode(String(address.pincode ?? "")))
+  const pincode = String(address.pincode ?? "").trim();
+
+  // Step 1: must be 6 digits
+  if (!isValidPincode(pincode)) {
     v.add("pincode", "Pincode must be a 6-digit number.");
+  } else if (!isTamilNaduPincode(pincode)) {
+    // Step 2: must be Tamil Nadu
+    v.add(
+      "pincode",
+      "Sorry, we currently deliver only within Tamil Nadu. Please enter a valid Tamil Nadu pincode."
+    );
+  }
 
   return v;
 }

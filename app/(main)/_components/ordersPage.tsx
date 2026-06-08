@@ -6,27 +6,26 @@ import Link from "next/link";
 import {
   Package, ChevronRight, ChevronDown, ChevronUp,
   Phone, ShoppingBag, Clock, MapPin, CreditCard,
-  Truck, Search,
+  Truck, Search, CheckCircle2, RefreshCw, XCircle,
 } from "lucide-react";
 import { getAllOrders, StoredOrder } from "@/lib/orderStorage";
 
-// ─── Helpers (inline — no longer imported from orderStorage) ─────────────────
+// ─── Status helpers ───────────────────────────────────────────────────────────
 
 function formatOrderDate(dateStr: string): string {
   try {
     return new Date(dateStr).toLocaleDateString("en-IN", {
       day: "numeric", month: "short", year: "numeric",
     });
-  } catch {
-    return dateStr;
-  }
+  } catch { return dateStr; }
 }
 
 function statusLabel(status: string): string {
   const map: Record<string, string> = {
-    pending:    "Pending",
+    pending:    "Order Placed",
     confirmed:  "Confirmed",
     packed:     "Being Packed",
+    processing: "Processing",
     shipped:    "Shipped",
     delivered:  "Delivered",
     cancelled:  "Cancelled",
@@ -37,49 +36,95 @@ function statusLabel(status: string): string {
 
 function statusColor(status: string): string {
   const map: Record<string, string> = {
-    pending:   "bg-yellow-100 text-yellow-700 border-yellow-200",
-    confirmed: "bg-blue-100 text-blue-700 border-blue-200",
-    packed:    "bg-purple-100 text-purple-700 border-purple-200",
-    shipped:   "bg-indigo-100 text-indigo-700 border-indigo-200",
-    delivered: "bg-green-100 text-green-700 border-green-200",
-    cancelled: "bg-red-100 text-red-700 border-red-200",
-    refunded:  "bg-gray-100 text-gray-600 border-gray-200",
+    pending:    "bg-yellow-100 text-yellow-700 border-yellow-200",
+    confirmed:  "bg-blue-100 text-blue-700 border-blue-200",
+    processing: "bg-blue-100 text-blue-700 border-blue-200",
+    packed:     "bg-purple-100 text-purple-700 border-purple-200",
+    shipped:    "bg-indigo-100 text-indigo-700 border-indigo-200",
+    delivered:  "bg-green-100 text-green-700 border-green-200",
+    cancelled:  "bg-red-100 text-red-700 border-red-200",
+    refunded:   "bg-gray-100 text-gray-600 border-gray-200",
   };
   return map[status] ?? "bg-gray-100 text-gray-600 border-gray-200";
 }
 
-// ─── Delivery timeline ────────────────────────────────────────────────────────
+// ─── Inline order timeline (replaces the separate Track Order page) ───────────
 
-const TIMELINE = [
-  { key: "confirmed", label: "Confirmed" },
-  { key: "packed",    label: "Being Packed" },
-  { key: "shipped",   label: "Out for Delivery" },
-  { key: "delivered", label: "Delivered" },
+const TIMELINE_STEPS = [
+  { key: "confirmed",  label: "Confirmed",      icon: CheckCircle2 },
+  { key: "processing", label: "Being Packed",    icon: Package },
+  { key: "shipped",    label: "Out for Delivery",icon: Truck },
+  { key: "delivered",  label: "Delivered",       icon: CheckCircle2 },
 ];
 
-const MiniTimeline = ({ status }: { status: string }) => {
-  const current = TIMELINE.findIndex((t) => t.key === status);
+// Map some statuses to the closest timeline step
+const STATUS_TO_STEP: Record<string, string> = {
+  pending:    "confirmed",
+  confirmed:  "confirmed",
+  packed:     "processing",
+  processing: "processing",
+  shipped:    "shipped",
+  delivered:  "delivered",
+};
+
+function OrderTimeline({ status }: { status: string }) {
+  if (["cancelled", "refunded"].includes(status)) {
+    return (
+      <div className="flex items-center gap-2 py-3 px-4 bg-red-50 rounded-xl border border-red-100">
+        <XCircle size={16} className="text-red-500 shrink-0" />
+        <p className="text-sm font-semibold text-red-600">
+          {status === "cancelled" ? "This order was cancelled." : "This order has been refunded."}
+        </p>
+      </div>
+    );
+  }
+
+  const activeKey = STATUS_TO_STEP[status] ?? "confirmed";
+  const activeIdx = TIMELINE_STEPS.findIndex((s) => s.key === activeKey);
+
   return (
-    <div className="flex items-center gap-1 mt-3">
-      {TIMELINE.map((step, i) => {
-        const done   = i < current;
-        const active = i === current;
-        return (
-          <div key={step.key} className="flex items-center flex-1">
-            <div className={`w-3 h-3 rounded-full shrink-0 border-2 transition-all ${
-              done   ? "bg-[#3d6b35] border-[#3d6b35]" :
-              active ? "bg-white border-[#3d6b35] shadow shadow-[#3d6b35]/30" :
-                       "bg-white border-[#d4c9a8]"
-            }`} />
-            {i < TIMELINE.length - 1 && (
-              <div className={`flex-1 h-0.5 ${i < current ? "bg-[#3d6b35]" : "bg-[#e8e0d0]"}`} />
-            )}
-          </div>
-        );
-      })}
+    <div className="py-3">
+      <p className="text-xs font-bold text-[#7a9e6a] uppercase tracking-wide mb-3">Order Progress</p>
+      <div className="flex items-start">
+        {TIMELINE_STEPS.map((step, i) => {
+          const done   = i < activeIdx;
+          const active = i === activeIdx;
+          const Icon   = step.icon;
+          return (
+            <div key={step.key} className="flex items-center flex-1 min-w-0">
+              <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${
+                  done   ? "bg-[#3d6b35] border-[#3d6b35]" :
+                  active ? "bg-white border-[#3d6b35] shadow shadow-[#3d6b35]/20" :
+                           "bg-white border-[#d4c9a8]"
+                }`}>
+                  <Icon size={15} className={done ? "text-white" : active ? "text-[#3d6b35]" : "text-[#b0a890]"} />
+                </div>
+                <span className={`text-[10px] font-bold text-center leading-tight whitespace-nowrap max-w-[56px] ${
+                  done || active ? "text-[#3d6b35]" : "text-[#b0a890]"
+                }`}>
+                  {step.label}
+                </span>
+              </div>
+              {i < TIMELINE_STEPS.length - 1 && (
+                <div className={`flex-1 h-0.5 mx-1 mb-5 ${i < activeIdx ? "bg-[#3d6b35]" : "bg-[#e8e0d0]"}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {active && (
+        <p className="text-xs text-[#5a5a48] mt-2 bg-[#faf7f2] rounded-lg px-3 py-2 border border-[#e8e0d0]">
+          {status === "confirmed"  && "✅ Your order is confirmed and will be packed soon."}
+          {status === "pending"    && "⏳ Your order has been placed and is awaiting confirmation."}
+          {(status === "processing" || status === "packed") && "📦 Your order is being packed carefully."}
+          {status === "shipped"    && "🚚 Your order is out for delivery! Our partner will call before arriving."}
+          {status === "delivered"  && "🎉 Your order has been delivered. Happy gardening!"}
+        </p>
+      )}
     </div>
   );
-};
+}
 
 // ─── Local order card (from localStorage) ────────────────────────────────────
 
@@ -88,6 +133,7 @@ const OrderCard = ({ order }: { order: StoredOrder }) => {
 
   return (
     <div className="bg-white rounded-2xl border border-[#e8e0d0] overflow-hidden">
+      {/* Header */}
       <div className="px-5 py-4 flex items-start justify-between gap-4 flex-wrap">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -97,17 +143,15 @@ const OrderCard = ({ order }: { order: StoredOrder }) => {
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs text-[#7a7a68] flex-wrap">
-            <span className="flex items-center gap-1">
-              <Clock size={12} />{formatOrderDate(order.date)}
-            </span>
+            <span className="flex items-center gap-1"><Clock size={12} />{formatOrderDate(order.date)}</span>
             <span>·</span>
             <span>{order.items.length} item{order.items.length !== 1 ? "s" : ""}</span>
             <span>·</span>
             <span className="font-bold text-[#3d6b35]">₹{order.total.toLocaleString("en-IN")}</span>
           </div>
-          <MiniTimeline status={order.status} />
         </div>
 
+        {/* Thumbnail strip */}
         <div className="flex gap-1.5 shrink-0">
           {order.items.slice(0, 3).map((item, i) => (
             <div key={i} className="relative w-12 h-12 rounded-xl overflow-hidden bg-[#f5f0ea] border border-[#e8e0d0]">
@@ -122,29 +166,31 @@ const OrderCard = ({ order }: { order: StoredOrder }) => {
         </div>
       </div>
 
+      {/* ── Inline Timeline (always visible) ── */}
+      <div className="px-5 pb-2 border-t border-[#f0ece4]">
+        <OrderTimeline status={order.status} />
+      </div>
+
+      {/* Expand / collapse details */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-5 py-3 border-t border-[#f0ece4] bg-[#faf7f2] hover:bg-[#f0ece4] transition-colors text-sm font-semibold text-[#5a5a48]"
       >
-        <span>{expanded ? "Hide details" : "View details"}</span>
+        <span>{expanded ? "Hide details" : "View full details"}</span>
         {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
 
       {expanded && (
         <div className="border-t border-[#e8e0d0] flex flex-col divide-y divide-[#f0ece4]">
+          {/* Items */}
           {order.items.map((item, i) => (
             <div key={i} className="flex items-center gap-4 px-5 py-4">
-              <Link
-                href={`/shop/product/${item.id}`}
-                className="relative w-14 h-14 rounded-xl overflow-hidden bg-[#f5f0ea] border border-[#e8e0d0] shrink-0"
-              >
+              <Link href={`/shop/product/${item.id}`} className="relative w-14 h-14 rounded-xl overflow-hidden bg-[#f5f0ea] border border-[#e8e0d0] shrink-0">
                 <Image src={item.image} alt={item.name} fill className="object-cover" />
               </Link>
               <div className="flex-1 min-w-0">
                 <Link href={`/shop/product/${item.id}`}>
-                  <p className="text-sm font-bold text-[#2a2a1e] hover:text-[#3d6b35] transition-colors leading-snug">
-                    {item.name}
-                  </p>
+                  <p className="text-sm font-bold text-[#2a2a1e] hover:text-[#3d6b35] transition-colors leading-snug">{item.name}</p>
                 </Link>
                 <p className="text-xs text-[#7a7a68] mt-0.5">{item.variant} × {item.quantity}</p>
               </div>
@@ -154,6 +200,7 @@ const OrderCard = ({ order }: { order: StoredOrder }) => {
             </div>
           ))}
 
+          {/* Totals */}
           <div className="px-5 py-4 bg-[#faf7f2] flex flex-col gap-2">
             <div className="flex justify-between text-sm text-[#5a5a48]">
               <span>Subtotal</span>
@@ -175,6 +222,7 @@ const OrderCard = ({ order }: { order: StoredOrder }) => {
             </div>
           </div>
 
+          {/* Address + payment */}
           <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <div className="flex items-center gap-2 mb-2">
@@ -197,15 +245,14 @@ const OrderCard = ({ order }: { order: StoredOrder }) => {
             </div>
           </div>
 
+          {/* Actions */}
           <div className="px-5 py-4 bg-[#faf7f2] flex gap-3 flex-wrap">
-            <a
-              href="tel:+919876543210"
+            <a href="tel:+919876543210"
               className="flex items-center gap-2 bg-[#3d6b35] hover:bg-[#335c2c] text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-colors"
             >
-              <Phone size={15} />Track Order
+              <Phone size={15} />Call for Update
             </a>
-            <Link
-              href="/shop"
+            <Link href="/shop"
               className="flex items-center gap-2 bg-white hover:bg-[#f5f0ea] border-2 border-[#d4c9a8] hover:border-[#3d6b35] text-[#3d6b35] font-bold text-sm px-4 py-2.5 rounded-xl transition-colors"
             >
               Buy Again
@@ -217,7 +264,7 @@ const OrderCard = ({ order }: { order: StoredOrder }) => {
   );
 };
 
-// ─── DB order card (fetched by phone from MongoDB) ────────────────────────────
+// ─── DB order card (fetched by phone) ────────────────────────────────────────
 
 interface DBOrder {
   _id: string; orderNumber: string; total: number; status: string;
@@ -239,9 +286,7 @@ const DBOrderCard = ({ order }: { order: DBOrder }) => {
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs text-[#7a7a68] flex-wrap">
-            <span className="flex items-center gap-1">
-              <Clock size={12} />{formatOrderDate(order.createdAt)}
-            </span>
+            <span className="flex items-center gap-1"><Clock size={12} />{formatOrderDate(order.createdAt)}</span>
             <span>·</span>
             <span>{order.items?.length ?? 0} item{(order.items?.length ?? 0) !== 1 ? "s" : ""}</span>
             <span>·</span>
@@ -250,11 +295,16 @@ const DBOrderCard = ({ order }: { order: DBOrder }) => {
         </div>
       </div>
 
+      {/* Inline Timeline */}
+      <div className="px-5 pb-2 border-t border-[#f0ece4]">
+        <OrderTimeline status={order.status} />
+      </div>
+
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-5 py-3 border-t border-[#f0ece4] bg-[#faf7f2] hover:bg-[#f0ece4] transition-colors text-sm font-semibold text-[#5a5a48]"
       >
-        <span>{expanded ? "Hide details" : "View details"}</span>
+        <span>{expanded ? "Hide details" : "View full details"}</span>
         {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
 
@@ -298,7 +348,6 @@ export default function OrdersPage() {
   const [dbSearched,  setDbSearched]  = useState(false);
 
   useEffect(() => {
-    // getAllOrders is the correct export (returns StoredOrder[])
     setLocalOrders(getAllOrders());
     setLoaded(true);
   }, []);
@@ -360,7 +409,7 @@ export default function OrdersPage() {
         <div className="bg-white rounded-2xl border border-[#e8e0d0] p-5 mb-8">
           <p className="text-base font-bold text-[#2a2a1e] mb-1">Find orders by phone number</p>
           <p className="text-sm text-[#7a7a68] mb-4">
-            If you ordered from a different device, look up your orders using your mobile number.
+            Ordered from a different device? Look up your orders using your mobile number.
           </p>
           <form onSubmit={handlePhoneSearch} className="flex gap-3">
             <div className="relative flex-1">
@@ -403,7 +452,7 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* Local orders from this device */}
+        {/* Local orders */}
         {!loaded ? (
           <div className="flex flex-col gap-4">
             {[1, 2].map((i) => (
@@ -424,10 +473,9 @@ export default function OrdersPage() {
             </div>
             <h2 className="text-2xl font-bold text-[#2a2a1e] mb-2">No orders yet</h2>
             <p className="text-base text-[#7a7a68] mb-8 max-w-xs leading-relaxed">
-              When you place an order it will appear here. You can also search by phone number above.
+              When you place an order it will appear here with live tracking. You can also search by phone number above.
             </p>
-            <Link
-              href="/shop"
+            <Link href="/shop"
               className="inline-flex items-center gap-2 bg-[#3d6b35] hover:bg-[#335c2c] text-white font-bold text-base px-8 py-4 rounded-xl transition-colors"
             >
               Browse Products
@@ -444,13 +492,8 @@ export default function OrdersPage() {
                 <Phone size={18} className="text-[#3d6b35] shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-bold text-[#2a2a1e]">Questions about an order?</p>
-                  <p className="text-xs text-[#7a7a68] mt-0.5">
-                    Call us with your Order ID for a full update.
-                  </p>
-                  <a
-                    href="tel:+919876543210"
-                    className="text-sm font-bold text-[#3d6b35] hover:underline mt-1 block"
-                  >
+                  <p className="text-xs text-[#7a7a68] mt-0.5">Call us with your Order ID for a full update.</p>
+                  <a href="tel:+919876543210" className="text-sm font-bold text-[#3d6b35] hover:underline mt-1 block">
                     📞 +91 98765 43210
                   </a>
                 </div>

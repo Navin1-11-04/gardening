@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Minus, Plus, ChevronRight, Tag, Truck,
-  ShieldCheck, Phone, ShoppingBag, ArrowRight, X, RefreshCw,
+  ShieldCheck, Phone, ShoppingBag, ArrowRight, X, RefreshCw, Trash2,
 } from "lucide-react";
 import { CartItem, useCart } from "../_context/CartContext";
 import { useStoreConfig } from "@/lib/useStoreConfig";
@@ -22,16 +22,6 @@ const CartItemRow = ({
   onRemove: (id: number, variant: string) => void;
 }) => (
   <tr className="border-b border-[#e8e0d0] hover:bg-[#faf7f2] transition-colors">
-    {/* Remove button */}
-    <td className="py-4 px-2 text-center">
-      <button
-        onClick={() => onRemove(item.id, item.variant)}
-        className="inline-flex items-center justify-center w-7 h-7 text-[#c0392b] hover:bg-red-50 rounded-full transition-colors text-lg font-bold leading-none"
-        title="Remove item"
-      >
-        ×
-      </button>
-    </td>
 
     {/* Product info */}
     <td className="py-4 px-3">
@@ -47,7 +37,7 @@ const CartItemRow = ({
             </span>
           )}
         </Link>
-        <div className="min-w-0">
+        <div className="flex-1 min-w-0">
           <Link href={`/shop/product/${item.id}`}>
             <h3 className="text-sm font-semibold text-[#2a2a1e] hover:text-[#3d6b35] transition-colors line-clamp-2">
               {item.name}
@@ -79,7 +69,7 @@ const CartItemRow = ({
         <button
           onClick={() => onQtyChange(item.id, item.quantity - 1, item.variant)}
           className="w-8 h-8 flex items-center justify-center hover:bg-[#eef5ea] transition-colors active:scale-95"
-          title={item.quantity === 1 ? "Remove item" : "Decrease quantity"}
+          title="Decrease quantity"
         >
           <Minus size={13} className="text-[#3d6b35]" />
         </button>
@@ -94,9 +84,6 @@ const CartItemRow = ({
           <Plus size={13} className="text-[#3d6b35]" />
         </button>
       </div>
-      {item.quantity === 1 && (
-        <p className="text-[10px] text-[#a8a090] mt-1">Tap − to remove</p>
-      )}
     </td>
 
     {/* Line total */}
@@ -109,6 +96,17 @@ const CartItemRow = ({
           Rs.{(item.originalPrice * item.quantity).toLocaleString("en-IN")}
         </p>
       )}
+    </td>
+
+    {/* ── Dustbin remove button — right-most column ── */}
+    <td className="py-4 px-3 text-center">
+      <button
+        onClick={() => onRemove(item.id, item.variant)}
+        className="inline-flex items-center justify-center w-9 h-9 rounded-xl text-[#a8a090] hover:text-[#c0392b] hover:bg-red-50 transition-colors active:scale-95"
+        title="Remove item"
+      >
+        <Trash2 size={17} />
+      </button>
     </td>
   </tr>
 );
@@ -138,19 +136,11 @@ export default function CartPage() {
   const total          = subtotal - couponDiscount + deliveryFee;
   const amountToFree   = FREE_DELIVERY_THRESHOLD - subtotal;
 
-  // ── Quantity change handler ────────────────────────────────────────────────
-  // When qty drops to 0, CartContext removes the item automatically.
-  // We trigger the undo toast so user can bring it back.
   const handleQtyChange = (id: number, qty: number, variant: string) => {
-    if (qty < 1) {
-      // Treat as removal with undo
-      handleRemove(id, variant);
-      return;
-    }
+    if (qty < 1) { handleRemove(id, variant); return; }
     updateQuantity(id, qty, variant);
   };
 
-  // ── Remove with undo toast ─────────────────────────────────────────────────
   const handleRemove = (id: number, variant: string) => {
     const item = items.find((i) => i.id === id && i.variant === variant);
     if (!item) return;
@@ -180,7 +170,6 @@ export default function CartPage() {
     setUndoBuffer(null);
   };
 
-  // ── Coupon validation ──────────────────────────────────────────────────────
   const handleApplyCoupon = async () => {
     const code = couponCode.trim().toUpperCase();
     if (!code) { setCouponError("Please enter a coupon code."); return; }
@@ -193,11 +182,7 @@ export default function CartPage() {
         body:    JSON.stringify({ code, orderTotal: subtotal }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setCouponError(data.error ?? "Invalid coupon code.");
-        setAppliedCoupon(null);
-        return;
-      }
+      if (!res.ok) { setCouponError(data.error ?? "Invalid coupon code."); setAppliedCoupon(null); return; }
       setAppliedCoupon({ code: data.code, discount: data.discount, description: data.description });
       setCouponError("");
     } catch {
@@ -213,23 +198,18 @@ export default function CartPage() {
     setCouponError("");
   };
 
-  // ── Empty cart ─────────────────────────────────────────────────────────────
   if (items.length === 0 && !removedItem) {
     return (
       <div className="min-h-screen bg-[#faf7f2] flex flex-col items-center justify-center px-4 text-center py-20">
         <div className="text-7xl mb-6">🛒</div>
-        <h2 className="text-3xl sm:text-4xl font-bold text-[#2a2a1e] font-outfit mb-3">
-          Your cart is empty
-        </h2>
+        <h2 className="text-3xl sm:text-4xl font-bold text-[#2a2a1e] font-outfit mb-3">Your cart is empty</h2>
         <p className="text-lg text-[#7a7a68] mb-8 max-w-sm">
           Looks like you have not added anything yet. Browse our products and start growing!
         </p>
-        <Link
-          href="/shop"
+        <Link href="/shop"
           className="inline-flex items-center gap-2 bg-[#3d6b35] hover:bg-[#335c2c] text-white font-bold text-lg px-8 py-4 rounded-xl transition-colors"
         >
-          <ShoppingBag size={20} />
-          Browse Products
+          <ShoppingBag size={20} />Browse Products
         </Link>
       </div>
     );
@@ -277,7 +257,7 @@ export default function CartPage() {
         ) : (
           <div className="mb-5 bg-[#eef5ea] border border-[#b8d4a0] rounded-2xl px-4 py-3.5">
             <p className="text-sm font-bold text-[#3d6b35]">
-              You have unlocked <span className="underline">FREE delivery!</span>
+              ✓ You've unlocked <span className="underline">FREE delivery!</span>
             </p>
           </div>
         )}
@@ -285,14 +265,13 @@ export default function CartPage() {
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            {/* LEFT: Cart Items Table */}
+            {/* Cart Items Table */}
             <div className="flex flex-col gap-4">
               <div className="bg-white rounded-lg border border-[#e8e0d0] overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-[#3d6b35] text-white sticky top-0">
                       <tr>
-                        <th className="w-8 py-3 px-2" />
                         <th className="py-3 px-3 text-left text-xs font-bold uppercase tracking-wider">
                           Product
                         </th>
@@ -304,6 +283,11 @@ export default function CartPage() {
                         </th>
                         <th className="w-28 py-3 px-3 text-right text-xs font-bold uppercase tracking-wider">
                           Total
+                        </th>
+                        {/* Dustbin column header */}
+                        <th className="w-12 py-3 px-3 text-center text-xs font-bold uppercase tracking-wider">
+                          <span className="sr-only">Remove</span>
+                          <Trash2 size={14} className="mx-auto opacity-70" />
                         </th>
                       </tr>
                     </thead>
@@ -320,15 +304,14 @@ export default function CartPage() {
                   </table>
                 </div>
               </div>
-              <Link
-                href="/shop"
+              <Link href="/shop"
                 className="flex items-center gap-2 text-sm font-semibold text-[#3d6b35] hover:text-[#335c2c] transition-colors w-fit"
               >
                 ← Continue Shopping
               </Link>
             </div>
 
-            {/* RIGHT: Order Summary */}
+            {/* Order Summary */}
             <div>
               <div className="bg-[#2a2a1e] rounded-lg overflow-hidden lg:sticky lg:top-24 h-fit">
                 <div className="px-5 py-6">
@@ -382,8 +365,7 @@ export default function CartPage() {
                     )}
                   </div>
 
-                  <Link
-                    href="/checkout"
+                  <Link href="/checkout"
                     className="mt-5 w-full block text-center bg-[#3d6b35] hover:bg-[#335c2c] text-white font-bold text-sm py-3.5 rounded-lg transition-colors active:scale-95"
                   >
                     Proceed to Checkout →
@@ -403,10 +385,7 @@ export default function CartPage() {
 
                   <div className="flex gap-2 justify-center mt-4 flex-wrap">
                     {["VISA", "Mastercard", "UPI", "G Pay"].map((p) => (
-                      <span
-                        key={p}
-                        className="border border-[#4a4a38] bg-[#3a3a2e] px-3 py-2 rounded text-[11px] text-[#c8c8b0] font-bold"
-                      >
+                      <span key={p} className="border border-[#4a4a38] bg-[#3a3a2e] px-3 py-2 rounded text-[11px] text-[#c8c8b0] font-bold">
                         {p}
                       </span>
                     ))}
@@ -416,7 +395,7 @@ export default function CartPage() {
             </div>
           </div>
 
-          {/* Coupon + Help row */}
+          {/* Coupon + Help */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             {/* Coupon */}
@@ -438,10 +417,7 @@ export default function CartPage() {
                       <p className="text-xs text-[#7a9e6a] mt-0.5">{appliedCoupon.description}</p>
                     )}
                   </div>
-                  <button
-                    onClick={handleRemoveCoupon}
-                    className="p-1 rounded-lg hover:bg-white transition-colors"
-                  >
+                  <button onClick={handleRemoveCoupon} className="p-1 rounded-lg hover:bg-white transition-colors">
                     <X size={14} className="text-[#7a7a68]" />
                   </button>
                 </div>
@@ -451,10 +427,7 @@ export default function CartPage() {
                     type="text"
                     placeholder="Enter coupon code"
                     value={couponCode}
-                    onChange={(e) => {
-                      setCouponCode(e.target.value.toUpperCase());
-                      setCouponError("");
-                    }}
+                    onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(""); }}
                     onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
                     className="flex-1 bg-gray-50 border-2 border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 outline-none focus:border-[#3d6b35] transition-colors font-medium uppercase"
                   />
@@ -480,8 +453,7 @@ export default function CartPage() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-bold text-[#1a4d1a]">Need help with your order?</p>
-                <a
-                  href="tel:+919876543210"
+                <a href="tel:+919876543210"
                   className="inline-block mt-3 text-base font-bold text-[#3d6b35] hover:bg-[#f0f7eb] px-3 py-2 rounded-lg transition-colors"
                 >
                   +91 98765 43210
@@ -498,16 +470,12 @@ export default function CartPage() {
           <p className="flex-1 text-sm font-medium leading-snug">
             "{removedItem.name}" removed
           </p>
-          <button
-            onClick={handleUndo}
+          <button onClick={handleUndo}
             className="shrink-0 bg-[#3d6b35] hover:bg-[#4a8040] text-white text-sm font-bold px-3 py-1.5 rounded-xl transition-colors"
           >
             Undo
           </button>
-          <button
-            onClick={handleDismissToast}
-            className="shrink-0 text-white/60 hover:text-white transition-colors"
-          >
+          <button onClick={handleDismissToast} className="shrink-0 text-white/60 hover:text-white transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -524,8 +492,7 @@ export default function CartPage() {
             Rs.{total.toLocaleString("en-IN")}
           </p>
         </div>
-        <Link
-          href="/checkout"
+        <Link href="/checkout"
           className="flex items-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] text-white font-bold text-sm px-5 py-3 rounded-xl transition-colors shadow-md"
         >
           Checkout <ArrowRight size={16} />

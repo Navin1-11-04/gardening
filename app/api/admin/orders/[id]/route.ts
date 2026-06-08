@@ -1,7 +1,9 @@
+// app/api/admin/orders/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { requireAdminAuth } from "@/lib/adminAuthServer";
+import { verifyCsrf } from "@/lib/csrf";
 
 export async function GET(
   _req: NextRequest,
@@ -13,11 +15,8 @@ export async function GET(
   try {
     const { id } = await params;
     await connectDB();
-
     const order = await Order.findById(id).lean();
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
+    if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
     const o = order as any;
     return NextResponse.json({
@@ -48,62 +47,45 @@ export async function PATCH(
   const auth = await requireAdminAuth();
   if (!auth.ok) return auth.response;
 
+  const csrf = await verifyCsrf(request);
+  if (!csrf.ok) return csrf.response;
+
   try {
     const { id } = await params;
     const { status } = await request.json();
 
-    const valid = [
-      "pending", "processing", "shipped",
-      "delivered", "cancelled", "refunded",
-    ];
+    const valid = ["pending", "processing", "shipped", "delivered", "cancelled", "refunded"];
     if (!valid.includes(status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
     await connectDB();
-    const order = await Order.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    ).lean();
-
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
+    const order = await Order.findByIdAndUpdate(id, { status }, { new: true }).lean();
+    if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
     const o = order as any;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
 
-    // ── Fire customer email for shipped / delivered ────────────────────────────
     if ((status === "shipped" || status === "delivered") && o.customerEmail) {
-      const emailPayload = {
-        orderNumber:   o.orderNumber,
-        customerName:  o.customerName,
-        customerEmail: o.customerEmail,
-        customerPhone: o.customerPhone,
-        status,
-        total:  o.total,
-        items: (o.items ?? []).map((i: any) => ({
-          name:     i.name,
-          quantity: i.quantity,
-        })),
-        address: o.address ?? {},
-      };
-
-      // Status update email (shipped / delivered template)
       fetch(`${baseUrl}/api/notify/email/status`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(emailPayload),
+        body: JSON.stringify({
+          orderNumber:   o.orderNumber,
+          customerName:  o.customerName,
+          customerEmail: o.customerEmail,
+          customerPhone: o.customerPhone,
+          status,
+          total:  o.total,
+          items: (o.items ?? []).map((i: any) => ({ name: i.name, quantity: i.quantity })),
+          address: o.address ?? {},
+        }),
       }).catch(console.error);
     }
 
     return NextResponse.json({ message: "Status updated", status });
   } catch (error) {
     console.error("Update order error:", error);
-    return NextResponse.json(
-      { error: "Failed to update order" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
   }
 }

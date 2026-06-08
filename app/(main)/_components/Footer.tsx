@@ -1,6 +1,7 @@
 "use client";
 
-import { Truck, RotateCcw, ShieldCheck, Headphones, Phone, Mail } from "lucide-react";
+import { useState } from "react";
+import { Truck, RotateCcw, ShieldCheck, Headphones, Phone, Mail, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 const features = [
@@ -10,7 +11,6 @@ const features = [
   { icon: Headphones,   title: "Garden Support", text: "Call us anytime" },
 ];
 
-// FIX: shop links use /shop?cat=X to match ShopPage's activeCategory query param logic
 const shopLinks: [string, string][] = [
   ["Seeds",       "/shop?cat=seeds"],
   ["Grow Bags",   "/shop?cat=grow-bags"],
@@ -33,6 +33,79 @@ const helpLinks: [string, string][] = [
   ["Returns",    "/returns"],
   ["Privacy",    "/privacy"],
 ];
+
+// ── Newsletter form with real API ─────────────────────────────────────────────
+
+function NewsletterForm() {
+  const [email,     setEmail]     = useState("");
+  const [loading,   setLoading]   = useState(false);
+  const [success,   setSuccess]   = useState(false);
+  const [error,     setError]     = useState("");
+
+  const handleSubscribe = async () => {
+    const e = email.trim();
+    if (!e || !e.includes("@")) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ email: e }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to subscribe. Please try again.");
+        return;
+      }
+      setSuccess(true);
+      setEmail("");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="flex items-center gap-3 bg-[#3d6b35]/30 border border-[#3d6b35]/50 rounded-xl px-4 py-3.5 max-w-md">
+        <CheckCircle2 size={20} className="text-[#a8d878] shrink-0" />
+        <p className="text-sm font-semibold text-white">
+          You're subscribed! Check your inbox for a welcome email. 🌱
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 max-w-md">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          type="email"
+          placeholder="Enter your email address"
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); setError(""); }}
+          onKeyDown={(e) => e.key === "Enter" && handleSubscribe()}
+          className="flex-1 bg-white/8 border-2 border-white/15 rounded-xl px-4 py-3.5 text-base text-white placeholder:text-gray-500 outline-none focus:border-[#7a9e5f] transition-colors"
+        />
+        <button
+          onClick={handleSubscribe}
+          disabled={loading}
+          className="bg-[#3d6b35] hover:bg-[#335c2c] disabled:bg-[#2a4a25] text-white px-6 py-3.5 rounded-xl text-base font-bold transition-colors whitespace-nowrap flex items-center gap-2"
+        >
+          {loading ? <><Loader2 size={16} className="animate-spin" />Subscribing…</> : "Subscribe"}
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-400 font-semibold">{error}</p>}
+    </div>
+  );
+}
+
+// ── Main Footer ───────────────────────────────────────────────────────────────
 
 export const Footer = () => {
   return (
@@ -139,16 +212,7 @@ export const Footer = () => {
           We'll send you seasonal planting tips, guides, and special offers.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 max-w-md">
-          <input
-            type="email"
-            placeholder="Enter your email address"
-            className="flex-1 bg-white/8 border-2 border-white/15 rounded-xl px-4 py-3.5 text-base text-white placeholder:text-gray-500 outline-none focus:border-[#7a9e5f] transition-colors"
-          />
-          <button className="bg-[#3d6b35] hover:bg-[#335c2c] text-white px-6 py-3.5 rounded-xl text-base font-bold transition-colors whitespace-nowrap">
-            Subscribe
-          </button>
-        </div>
+        <NewsletterForm />
 
         <p className="text-sm text-gray-600 mt-3">We respect your privacy. Unsubscribe anytime.</p>
 

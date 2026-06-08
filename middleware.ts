@@ -5,6 +5,14 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.ADMIN_JWT_SECRET || "default-secret"
 );
 
+const CSRF_COOKIE = "csrf_token";
+
+function generateCsrfToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -22,7 +30,18 @@ export async function middleware(request: NextRequest) {
 
     try {
       await jwtVerify(token, JWT_SECRET);
-      return NextResponse.next();
+      const response = NextResponse.next();
+      // Ensure admin always has a CSRF token cookie
+      if (!request.cookies.get(CSRF_COOKIE)?.value) {
+        response.cookies.set(CSRF_COOKIE, generateCsrfToken(), {
+          httpOnly: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          path: "/",
+          maxAge: 60 * 60 * 8, // 8 hours
+        });
+      }
+      return response;
     } catch {
       const url = request.nextUrl.clone();
       url.pathname = "/admin/login";
