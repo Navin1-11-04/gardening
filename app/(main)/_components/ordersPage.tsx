@@ -82,26 +82,29 @@ function OrderTimeline({ status }: { status: string }) {
   const activeKey = STATUS_TO_STEP[status] ?? "confirmed";
   const activeIdx = TIMELINE_STEPS.findIndex((s) => s.key === activeKey);
 
+  // Compute outside the map so it's available for the status message below
+  const hasActiveStep = activeIdx >= 0 && activeIdx < TIMELINE_STEPS.length;
+
   return (
     <div className="py-3">
       <p className="text-xs font-bold text-[#7a9e6a] uppercase tracking-wide mb-3">Order Progress</p>
       <div className="flex items-start">
         {TIMELINE_STEPS.map((step, i) => {
-          const done   = i < activeIdx;
-          const active = i === activeIdx;
-          const Icon   = step.icon;
+          const done       = i < activeIdx;
+          const isActive   = i === activeIdx;
+          const Icon       = step.icon;
           return (
             <div key={step.key} className="flex items-center flex-1 min-w-0">
               <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${
-                  done   ? "bg-[#3d6b35] border-[#3d6b35]" :
-                  active ? "bg-white border-[#3d6b35] shadow shadow-[#3d6b35]/20" :
-                           "bg-white border-[#d4c9a8]"
+                  done     ? "bg-[#3d6b35] border-[#3d6b35]" :
+                  isActive ? "bg-white border-[#3d6b35] shadow shadow-[#3d6b35]/20" :
+                             "bg-white border-[#d4c9a8]"
                 }`}>
-                  <Icon size={15} className={done ? "text-white" : active ? "text-[#3d6b35]" : "text-[#b0a890]"} />
+                  <Icon size={15} className={done ? "text-white" : isActive ? "text-[#3d6b35]" : "text-[#b0a890]"} />
                 </div>
                 <span className={`text-[10px] font-bold text-center leading-tight whitespace-nowrap max-w-[56px] ${
-                  done || active ? "text-[#3d6b35]" : "text-[#b0a890]"
+                  done || isActive ? "text-[#3d6b35]" : "text-[#b0a890]"
                 }`}>
                   {step.label}
                 </span>
@@ -113,13 +116,13 @@ function OrderTimeline({ status }: { status: string }) {
           );
         })}
       </div>
-      {active && (
+      {hasActiveStep && (
         <p className="text-xs text-[#5a5a48] mt-2 bg-[#faf7f2] rounded-lg px-3 py-2 border border-[#e8e0d0]">
-          {status === "confirmed"  && "✅ Your order is confirmed and will be packed soon."}
-          {status === "pending"    && "⏳ Your order has been placed and is awaiting confirmation."}
+          {status === "confirmed"                           && "✅ Your order is confirmed and will be packed soon."}
+          {status === "pending"                             && "⏳ Your order has been placed and is awaiting confirmation."}
           {(status === "processing" || status === "packed") && "📦 Your order is being packed carefully."}
-          {status === "shipped"    && "🚚 Your order is out for delivery! Our partner will call before arriving."}
-          {status === "delivered"  && "🎉 Your order has been delivered. Happy gardening!"}
+          {status === "shipped"                             && "🚚 Your order is out for delivery! Our partner will call before arriving."}
+          {status === "delivered"                           && "🎉 Your order has been delivered. Happy gardening!"}
         </p>
       )}
     </div>
