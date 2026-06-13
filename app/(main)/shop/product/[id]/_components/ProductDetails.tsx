@@ -236,7 +236,7 @@ export default function ProductDetails({ productId }: { productId: string }) {
 
             {/* Category + name + rating */}
             <div>
-              <p className="text-xs font-bold text-[#3d6b35] uppercase tracking-widest mb-1.5 capitalize">
+              <p className="text-xs font-bold text-[#3d6b35] uppercase tracking-widest mb-1.5">
                 {product.category.replace("-", " ")}
               </p>
               <h1 className="text-2xl sm:text-3xl font-black text-[#2a2a1e] font-outfit leading-tight mb-1">
@@ -462,29 +462,6 @@ export default function ProductDetails({ productId }: { productId: string }) {
           </div>
         </div>
       )}
-
-      {/* ── Sticky mobile Add to Cart bar ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t-2 border-[#e8e0d0] px-4 py-3 flex items-center gap-3 shadow-2xl">
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-[#7a7a68] truncate">{selectedWeight}</p>
-          <p className="text-xl font-black text-[#3d6b35] leading-tight">₹{product.price}</p>
-        </div>
-        <button
-          onClick={handleAddToCart}
-          className={`flex items-center gap-2 font-bold text-sm px-5 py-3 rounded-xl transition-all duration-300 active:scale-95 shadow-md ${
-            addedToCart
-              ? "bg-[#2e5228] text-white"
-              : "bg-[#3d6b35] hover:bg-[#2e5228] text-white"
-          }`}
-        >
-          {addedToCart ? (
-            <><Check size={18} />Added!</>
-          ) : (
-            <><ShoppingCart size={18} />{t("shop.addToCart", "Add")}</>
-          )}
-        </button>
-      </div>
-      <div className="lg:hidden h-20" />
     </div>
   );
 }
