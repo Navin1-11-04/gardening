@@ -236,7 +236,7 @@ export default function ProductDetails({ productId }: { productId: string }) {
 
             {/* Category + name + rating */}
             <div>
-              <p className="text-xs font-bold text-[#3d6b35] uppercase tracking-widest mb-1.5">
+              <p className="text-xs font-bold text-[#3d6b35] uppercase tracking-widest mb-1.5 capitalize">
                 {product.category.replace("-", " ")}
               </p>
               <h1 className="text-2xl sm:text-3xl font-black text-[#2a2a1e] font-outfit leading-tight mb-1">
@@ -462,6 +462,7 @@ export default function ProductDetails({ productId }: { productId: string }) {
           </div>
         </div>
       )}
+
     </div>
   );
 }

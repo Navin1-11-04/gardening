@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 
@@ -11,6 +12,18 @@ interface SliderItem {
   subtitle: string;
   ctaText: string;
   ctaHref: string;
+}
+
+// Strips domain from full URLs so CMS-saved values like
+// "https://kavinorganics.in/shop?cat=seeds" become "/shop?cat=seeds"
+function safeHref(href: string): string {
+  if (!href) return "/shop";
+  try {
+    const url = new URL(href);
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return href.startsWith("/") ? href : `/${href}`;
+  }
 }
 
 const FALLBACK: SliderItem[] = [
@@ -47,7 +60,6 @@ export const Slider = () => {
     Autoplay({ delay: 6000, stopOnInteraction: false }),
   ]);
 
-  // Fetch slider content from admin content API
   useEffect(() => {
     fetch("/api/content/homepage")
       .then((r) => r.ok ? r.json() : null)
@@ -56,7 +68,7 @@ export const Slider = () => {
           setSliderData(data.sliderItems);
         }
       })
-      .catch(() => {/* use fallback */});
+      .catch(() => {});
   }, []);
 
   const onSelect = useCallback(() => {
@@ -112,19 +124,16 @@ export const Slider = () => {
             <p className="text-white/80 text-base sm:text-lg font-medium max-w-lg leading-snug">
               {current?.subtitle}
             </p>
-            <div className="flex items-center gap-4 pt-1">
-              <a
-                href={current?.ctaHref}
+            <div className="pt-1">
+              <Link
+                href={safeHref(current?.ctaHref)}
                 className="inline-flex items-center gap-2 bg-[#3d6b35] hover:bg-[#2e5228] text-white font-bold text-base sm:text-lg px-7 py-3.5 rounded-xl transition-all duration-200 active:scale-95 shadow-lg"
               >
                 {current?.ctaText}
                 <svg width="18" height="18" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                   <path d="M2.5 7H11.5M8 3.5L11.5 7L8 10.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </a>
-              <a href="/shop" className="text-white/75 text-base font-semibold underline underline-offset-4 hover:text-white transition-colors">
-                Browse all →
-              </a>
+              </Link>
             </div>
           </div>
         </div>
